@@ -43,14 +43,6 @@
   margin-bottom: 16rpx;
 }
 
-.qrcode_hint {
-  font-size: 20rpx;
-  color: #999999;
-  line-height: 32rpx;
-  display: block;
-  margin-top: 8rpx;
-}
-
 .news_list {
   padding: 0;
 }

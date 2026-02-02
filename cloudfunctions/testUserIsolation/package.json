@@ -1,0 +1,9 @@
+{
+  "name": "testUserIsolation",
+  "version": "1.0.0",
+  "description": "测试用户数据隔离",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

@@ -1,0 +1,107 @@
+<view class="fullscreen-overlay"></view>
+<view class="quiz-bg">
+  <view class="container">
+    
+    <swiper class="question-swiper" current="{{currentQuestionIndex}}" duration="300" bindchange="onQuestionChange">
+      <swiper-item wx:for="{{questions}}" wx:key="questionId">
+        <view class="question-container">
+          <view class="question-inner">
+            <view class="question-type">
+              <text wx:if="{{item.type === 'single' || item.type === '单选题'}}" class="type-single">单选题</text>
+              <text wx:elif="{{item.type === 'multiple' || item.type === '多选题'}}" class="type-multiple">多选题</text>
+              <text wx:elif="{{item.type === 'judge' || item.type === '判断题'}}" class="type-judge">判断题</text>
+              <text wx:else class="type-unknown">{{item.type || '未知题型'}}</text>
+              <view class="favorite-btn" bindtap="toggleFavorite">
+                <image src="{{isFavorite ? '/images/icons/collected.png' : '/images/icons/uncollected.png'}}" mode="aspectFit"></image>
+                <text>{{isFavorite ? '已收藏' : '收藏'}}</text>
+              </view>
+            </view>
+            <view class="question-content">
+              {{item.questionContent}}
+            </view>
+            <view wx:if="{{item.imageUrl && item.imageUrl !== '无图片'}}">
+              <image 
+                class="question-image" 
+                src="{{errorImages[item.questionId] ? '/images/icons/error.png' : item.imageUrl}}" 
+                mode="aspectFit" 
+                bindload="onImageLoad" 
+                binderror="onImageError"
+                bindtap="previewImage"
+                bindlongpress="showImageMenu"
+                data-image-url="{{item.imageUrl}}"
+                data-question-id="{{item.questionId}}"
+              />
+              <view class="image-loading" wx:if="{{loadingImages[item.questionId]}}">
+                <text>加载中...</text>
+              </view>
+              <view class="image-error" wx:if="{{errorImages[item.questionId]}}">
+                <text>图片加载失败，点击重试</text>
+                <button bindtap="retryLoadImage" data-question-id="{{item.questionId}}" class="retry-btn">重试</button>
+              </view>
+            </view>
+            
+            <view class="options-container">
+              <view wx:for="{{item.options}}" wx:key="id" wx:for-item="subItem">
+                <view
+                  class="option-item {{item.answered ? 'option-item-' + subItem.status : ''}} {{subItem.status === 'select' ? 'option-item-select' : ''}}"
+                  bindtap="selectAnswer"
+                  data-option-id="{{subItem.id}}"
+                >
+                  <view class="option-letter {{item.answered ? 'option-letter-' + subItem.status : ''}} {{subItem.status === 'select' ? 'option-letter-select' : ''}}">{{subItem.id}}</view>
+                  <view class="option-content">{{subItem.value}}</view>
+                  <view wx:if="{{item.answered && subItem.status === 'right'}}" class="option-result correct">✓</view>
+                  <view wx:elif="{{item.answered && subItem.status === 'wrong'}}" class="option-result wrong">✗</view>
+                </view>
+              </view>
+            </view>
+            
+            <view wx:if="{{showAnswer}}" class="result-container">
+              <view class="result-icon {{isCorrect ? 'correct' : 'wrong'}}">
+                {{isCorrect ? '✓' : '✗'}}
+              </view>
+              <text class="result-text">{{isCorrect ? '回答正确' : '回答错误'}}</text>
+              <view class="answer-section">
+                <text class="answer-label">正确答案：</text>
+                <text class="answer-value">{{item.answer || (item.correctAnswers ? item.correctAnswers.join(', ') : '')}}</text>
+              </view>
+              <view wx:if="{{item.explanation}}" class="explanation-section">
+                <text class="explanation-label">解析：</text>
+                <text class="explanation-value">{{item.explanation}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </swiper-item>
+    </swiper>
+    
+  </view>
+
+  <!-- 底部抽屉 -->
+  <view class="drawer-container" style="transform: translateY({{drawerVisible ? '0' : '88%'}});">
+    <view class="drawer-header">
+      <view class="drawer-toggle-area" bindtap="toggleDrawer">
+        <image src="/images/icons/progress.png" class="drawer-icon" mode="aspectFit"></image>
+        <text class="drawer-title">错题列表 ({{currentQuestionIndex + 1}}/{{questions.length}})</text>
+      </view>
+      <view wx:if="{{currentQuestionIndex === questions.length - 1}}" class="drawer-submit-area">
+        <button class="btn submit-exam-btn" bindtap="submitExam">提交试卷</button>
+      </view>
+    </view>
+    <view class="drawer-content">
+      <view class="question-list">
+        <view wx:for="{{questions}}" wx:key="questionId" wx:for-index="idx" 
+              class="question-item {{currentQuestionIndex === idx ? 'question-item-active' : ''}} {{questionResults[idx] === true ? 'question-item-correct' : questionResults[idx] === false ? 'question-item-wrong' : ''}}" 
+              bindtap="jumpToQuestion" data-index="{{idx}}">
+          <text>{{idx + 1}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 图片操作菜单 -->
+  <action-sheet hidden="{{!imageMenuVisible}}" bindchange="onImageMenuChange">
+    <action-sheet-item class="menu-item" bindtap="saveImage">保存图片</action-sheet-item>
+    <action-sheet-item class="menu-item" bindtap="previewImageFromMenu">查看原图</action-sheet-item>
+    <action-sheet-cancel>取消</action-sheet-cancel>
+  </action-sheet>
+</view>

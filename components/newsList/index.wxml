@@ -1,0 +1,9 @@
+<view class="news_item" catch:tap="goDetail" data-url="{{url}}">
+  <view class="news_content">
+    <text class="news_title">{{title}}</text>
+    <text class="news_description">{{description}}</text>
+    <view class="news_meta">
+      <text class="news_time">{{time}}</text>
+    </view>
+  </view>
+</view>

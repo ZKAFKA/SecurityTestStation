@@ -1,0 +1,28 @@
+<view wx:if="{{visible}}" class="image-viewer-container" catchtap="close">
+  <view class="image-viewer-content" catchtap="stopPropagation">
+    <view wx:if="{{loading}}" class="image-loading-fullscreen">
+      <text>图片加载中...</text>
+    </view>
+    <view wx:else class="image-wrapper" style="transform: scale({{scale}}); transform-origin: center center;">
+      <view 
+        class="viewer-image-container"
+        bindtouchstart="onTouchStart"
+        bindtouchmove="onTouchMove"
+        bindtouchend="onTouchEnd"
+        bindtap="onImageTap"
+      >
+        <image 
+          class="viewer-image" 
+          src="{{imageUrl}}" 
+          mode="aspectFit" 
+          bindload="onImageLoad" 
+          binderror="onImageError"
+        />
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{error}}" class="image-error-fullscreen">
+    <text>图片加载失败</text>
+    <button bindtap="retry" class="retry-btn">重试</button>
+  </view>
+</view>

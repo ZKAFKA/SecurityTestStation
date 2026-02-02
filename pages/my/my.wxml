@@ -1,0 +1,89 @@
+<!--pages/my.wxml-->
+<view class="container">
+  <!-- 顶部用户信息卡片 -->
+  <view class="user-card">
+    <image class="user-background-image" src="{{backgroundImageUrl}}" mode="aspectFill"></image>
+    <view class="user-background-overlay"></view>
+    <view class="user-section" bindtap="onUserTap">
+      <view class="user-avatar-wrapper">
+        <view class="user-avatar">
+          <image wx:if="{{userInfo && userInfo.avatarUrl}}" src="{{userInfo.avatarUrl}}" class="user-avatar-image" mode="aspectFill"></image>
+          <image wx:else src="/images/icons/header-unlogin.png" class="user-avatar-image" mode="aspectFill"></image>
+        </view>
+      </view>
+      <view class="user-info">
+        <text class="user-name">{{userInfo && userInfo.nickName ? userInfo.nickName : '未登录'}}</text>
+        <text class="user-desc">网络安全</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浮动统计卡片 -->
+  <view class="floating-stats-card">
+    <view class="stats-item">
+      <text class="stats-label">今日进度</text>
+      <text class="stats-number">{{todayProgress}}</text>
+    </view>
+    <view class="stats-divider"></view>
+    <view class="stats-item">
+      <text class="stats-label">总刷题数</text>
+      <text class="stats-number">{{totalQuestionsCount}}</text>
+    </view>
+  </view>
+
+  <!-- 功能菜单卡片 -->
+  <view class="menu-card">
+    <view class="menu-section">
+      <view class="menu-item" bindtap="goToWrongQuestions">
+        <view class="menu-icon-wrapper">
+          <image src="/images/icons/wronglist.png" class="menu-icon" mode="aspectFit"></image>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">错题本</text>
+          <text class="menu-desc">查看和复习错题</text>
+        </view>
+        <!-- 错题数量 -->
+        <text class="menu-count">{{wrongQuestionsCount}}</text>
+      </view>
+      <view class="menu-divider"></view>
+      <view class="menu-item" bindtap="goToFavoriteQuestions">
+        <view class="menu-icon-wrapper">
+          <image src="/images/icons/collectlist.png" class="menu-icon" mode="aspectFit"></image>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">收藏题目</text>
+          <text class="menu-desc">查看收藏的题目</text>
+        </view>
+        <!-- 收藏数量 -->
+        <text class="menu-count">{{favoriteQuestionsCount}}</text>
+      </view>
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-section">
+      <view class="menu-item" bindtap="contactUs">
+        <view class="menu-icon-wrapper">
+          <image src="/images/icons/contactus.png" class="menu-icon" mode="aspectFit"></image>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">联系我们</text>
+          <text class="menu-desc">有问题随时联系</text>
+        </view>
+      </view>
+      <view class="menu-divider"></view>
+      <view class="menu-item" bindtap="aboutUs">
+        <view class="menu-icon-wrapper">
+          <image src="/images/icons/aboutus.png" class="menu-icon" mode="aspectFit"></image>
+        </view>
+        <view class="menu-content">
+          <text class="menu-title">关于我们</text>
+          <text class="menu-desc">了解更多信息</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部版本信息 -->
+  <view class="version-info">
+    <text class="version-text">版本号: 1.0.0</text>
+  </view>
+</view>

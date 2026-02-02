@@ -1,0 +1,4 @@
+1. 二维码可以长按扫描，使用微信通用组件 https://developers.weixin.qq.com/miniprogram/dev/component/official-account.html
+2. newlist列表优化
+3. 用户昵称无法同步 
+4. 小程序无法分享

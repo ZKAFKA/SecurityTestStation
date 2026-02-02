@@ -1,0 +1,11 @@
+{
+  "name": "initDatabase",
+  "version": "1.0.0",
+  "description": "初始化数据库集合和章节数据",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.1",
+    "xlsx": "^0.18.5",
+    "node-fetch": "^2.6.7"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "updateQuestionTypes",
+  "version": "1.0.0",
+  "description": "为现有题目添加类型字段",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.1"
+  }
+}

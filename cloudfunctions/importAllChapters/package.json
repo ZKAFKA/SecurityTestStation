@@ -1,0 +1,9 @@
+{
+  "name": "importAllChapters",
+  "version": "1.0.0",
+  "description": "批量导入所有章节的题目",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.1"
+  }
+}

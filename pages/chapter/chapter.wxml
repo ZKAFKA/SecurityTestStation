@@ -1,0 +1,58 @@
+<view class="container">
+  <view class="chapter-list">
+    <block wx:for="{{chapters}}" wx:key="chapterId">
+      <view class="chapter-wrapper">
+        <view 
+          class="chapter-item {{item.showRedo ? 'slide-left' : ''}}" 
+          bindtap="goQuiz" 
+          data-chapter-id="{{item.chapterId}}" 
+          data-chapter-name="{{item.chapterName}}"
+          data-index="{{index}}"
+          bindtouchstart="handleTouchStart"
+          bindtouchmove="handleTouchMove"
+          bindtouchend="handleTouchEnd"
+          style="transform: translateX({{item.translateX || 0}}px)"
+        >
+          <view class="chapter-header">
+            <view class="chapter-title">
+              <text class="chapter-number">{{item.chapterOrder}}. </text>
+              <text class="chapter-name">{{item.chapterName}}</text>
+            </view>
+            <text class="chapter-count">{{item.questionCount}} 题</text>
+          </view>
+          <view class="chapter-progress">
+            <view class="progress-bar">
+              <view class="progress-fill" style="width: {{item.progress}}%"></view>
+            </view>
+            <text class="progress-text">{{item.completed}}/{{item.questionCount}}</text>
+          </view>
+        </view>
+        <view 
+          class="redo-btn {{item.showRedo ? 'show' : ''}}" 
+          bindtap="showRedoConfirm"
+          data-chapter-id="{{item.chapterId}}"
+          data-chapter-name="{{item.chapterName}}"
+          data-index="{{index}}"
+        >
+          <text>重做</text>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 二次确认弹窗 -->
+  <view class="modal-mask {{showRedoConfirm ? 'show' : ''}}" bindtap="closeRedoConfirm">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">确认清空</text>
+      </view>
+      <view class="modal-body">
+        <text class="modal-message">确定要清空{{currentChapterName}}的所有做题记录吗？此操作不可恢复</text>
+      </view>
+      <view class="modal-footer">
+        <button class="modal-btn cancel-btn" bindtap="closeRedoConfirm">取消</button>
+        <button class="modal-btn confirm-btn" bindtap="confirmRedo">确认</button>
+      </view>
+    </view>
+  </view>
+</view>

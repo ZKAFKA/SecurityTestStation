@@ -1,0 +1,33 @@
+<!-- banner -->
+<swiper wx:if="{{bannerList.length >0}}" class="poster" indicator-dots autoplay>
+  <swiper-item wx:for="{{bannerList}}" wx:key="index">
+    <image src="{{item}}"></image>
+  </swiper-item>
+</swiper>
+
+<!-- 题库选择 -->
+<view wx:if="{{applicationScene.length >0}}" class="common" style="padding-right: 40rpx;">
+  <view class="common_title">题库选择</view>
+  <scroll-view class="scene_list" scroll-x="true" enable-flex>
+    <view wx:for="{{applicationScene}}" wx:key="index" class="scene_item" bind:tap="goQuiz" data-id="{{item._id}}" data-title="{{item.title}}" data-path="{{item.path}}">
+      <view class="scene_title">{{item.title}}</view> 
+      <view class="scene_cont">{{item.sub_title}}</view> 
+    </view>
+  </scroll-view>
+</view>
+
+<!-- 文章荐读 -->
+<view wx:if="{{newsList.length >0}}" class="common">
+  <view class="common_title">
+    <text>文章荐读</text>
+    <view class="news_more" bind:tap="onGoNews">
+      <text>更多 ></text>
+    </view>
+  </view>
+  <view class="news_list">
+    <news-list wx:for="{{newsList}}" wx:key="index" title="{{item.title}}" description="{{item.description}}" time="{{item.time}}" url="{{item.url}}" id="{{item._id}}" number="{{index}}"></news-list>
+  </view>
+</view>
+
+<!-- 版本信息 -->
+<version-info wx:if="{{partnersList.length >0}}"></version-info>

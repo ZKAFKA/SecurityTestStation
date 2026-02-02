@@ -1,0 +1,76 @@
+.news_item {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.news_item:hover {
+  transform: translateY(-4rpx);
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.08);
+}
+
+.news_content {
+  width: 100%;
+}
+
+.news_title {
+  font-size: 30rpx;
+  line-height: 48rpx;
+  font-weight: 600;
+  color: #333333;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 16rpx;
+}
+
+.news_description {
+  font-size: 24rpx;
+  line-height: 38rpx;
+  color: #666666;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-bottom: 20rpx;
+}
+
+.news_meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8rpx;
+}
+
+.news_time {
+  font-size: 22rpx;
+  color: #999999;
+  line-height: 1;
+}
+
+.news_item:hover .news_arrow {
+  transform: translateX(8rpx);
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .news_item {
+    padding: 24rpx;
+  }
+  
+  .news_title {
+    font-size: 28rpx;
+    line-height: 44rpx;
+  }
+  
+  .news_description {
+    font-size: 22rpx;
+    line-height: 34rpx;
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "removeFromWrongQuestions",
+  "version": "1.0.0",
+  "description": "从错题本移除题目",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

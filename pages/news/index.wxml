@@ -1,0 +1,14 @@
+<view class="news_page">
+  <view class="qrcode_container">
+    <image src="cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/公众号二维码/qrcode.jpg" class="qrcode_image" mode="aspectFit" bindlongpress="handleQrCodeLongPress" data-src="cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/公众号二维码/qrcode.jpg"/>
+    <view class="qrcode_text">
+      <text class="qrcode_title">网络安全研究站</text>
+      <text class="qrcode_subtitle">「See the Unseen.」深度、专业、前沿的网络安全知识分享平台。</text>
+      <text class="qrcode_hint">长按二维码图片可扫描关注</text>
+    </view>
+  </view>
+  <view class="news_list">
+    <news-list wx:for="{{newsList}}" wx:key="index" title="{{item.title}}" description="{{item.description}}" time="{{item.time}}" url="{{item.url}}" id="{{item._id}}" number="{{index}}"></news-list>
+  </view>
+</view>
+<version-info wx:if="{{newsList.length >0}}"></version-info>

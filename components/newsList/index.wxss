@@ -21,7 +21,7 @@
 .news_title {
   font-size: 30rpx;
   line-height: 48rpx;
-  font-weight: 600;
+  font-weight: 500;
   color: #333333;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -33,7 +33,7 @@
 .news_description {
   font-size: 24rpx;
   line-height: 38rpx;
-  color: #666666;
+  color: #787777;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;

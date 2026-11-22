@@ -1,7 +1,8 @@
 <view class="fullscreen-overlay"></view>
 <view class="quiz-bg">
+  <block wx:if="{{!isEmpty}}">
   <view class="container">
-    
+
     <swiper class="question-swiper" current="{{currentQuestionIndex}}" duration="300" bindchange="onQuestionChange">
       <swiper-item wx:for="{{questions}}" wx:key="questionId">
         <view class="question-container">
@@ -20,18 +21,20 @@
               {{item.questionContent}}
             </view>
             <view wx:if="{{item.imageUrl && item.imageUrl !== '无图片'}}">
-              <image 
-                class="question-image" 
-                src="{{errorImages[item.questionId] ? '/images/icons/error.png' : item.imageUrl}}" 
-                mode="aspectFit" 
-                bindload="onImageLoad" 
+              <image
+                wx:if="{{!errorImages[item.questionId]}}"
+                class="question-image"
+                src="{{item.imageUrl}}"
+                mode="aspectFit"
+                lazy-load="{{true}}"
+                bindload="onImageLoad"
                 binderror="onImageError"
                 bindtap="previewImage"
                 bindlongpress="showImageMenu"
                 data-image-url="{{item.imageUrl}}"
                 data-question-id="{{item.questionId}}"
               />
-              <view class="image-loading" wx:if="{{loadingImages[item.questionId]}}">
+              <view class="image-loading" wx:if="{{loadingImages[item.questionId] && !errorImages[item.questionId]}}">
                 <text>加载中...</text>
               </view>
               <view class="image-error" wx:if="{{errorImages[item.questionId]}}">
@@ -69,6 +72,11 @@
                 <text class="explanation-value">{{item.explanation}}</text>
               </view>
             </view>
+
+            <view class="remove-wrong-area">
+              <text class="remove-wrong-text" bindtap="onRemoveFromWrong" data-question-id="{{item.questionId}}">移出错题本</text>
+            </view>
+
           </view>
         </view>
       </swiper-item>
@@ -83,21 +91,27 @@
         <image src="/images/icons/progress.png" class="drawer-icon" mode="aspectFit"></image>
         <text class="drawer-title">错题列表 ({{currentQuestionIndex + 1}}/{{questions.length}})</text>
       </view>
-      <view wx:if="{{currentQuestionIndex === questions.length - 1}}" class="drawer-submit-area">
-        <button class="btn submit-exam-btn" bindtap="submitExam">提交试卷</button>
-      </view>
     </view>
     <view class="drawer-content">
       <view class="question-list">
-        <view wx:for="{{questions}}" wx:key="questionId" wx:for-index="idx" 
-              class="question-item {{currentQuestionIndex === idx ? 'question-item-active' : ''}} {{questionResults[idx] === true ? 'question-item-correct' : questionResults[idx] === false ? 'question-item-wrong' : ''}}" 
+        <view wx:for="{{questions}}" wx:key="questionId" wx:for-index="idx"
+              class="question-item {{currentQuestionIndex === idx ? 'question-item-active' : ''}} {{questionResults[idx] === true ? 'question-item-correct' : questionResults[idx] === false ? 'question-item-wrong' : ''}}"
               bindtap="jumpToQuestion" data-index="{{idx}}">
           <text>{{idx + 1}}</text>
         </view>
       </view>
     </view>
   </view>
-  
+  </block>
+
+  <!-- 空状态 -->
+  <view wx:if="{{isEmpty}}" class="empty-state">
+    <view class="empty-icon">📭</view>
+    <view class="empty-title">还没有错题</view>
+    <view class="empty-text">做错的题目会自动收录到这里，方便你集中复习</view>
+    <button class="empty-btn" bindtap="goHome">去刷题</button>
+  </view>
+
   <!-- 图片操作菜单 -->
   <action-sheet hidden="{{!imageMenuVisible}}" bindchange="onImageMenuChange">
     <action-sheet-item class="menu-item" bindtap="saveImage">保存图片</action-sheet-item>

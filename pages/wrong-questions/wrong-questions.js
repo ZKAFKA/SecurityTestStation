@@ -6,6 +6,8 @@ Page({
     userAnswers: [],
     chosenum: null,
     moreArr: {},
+    selectedCount: 0,
+    isEmpty: false,
     showAnswer: false,
     isCorrect: null,
     isFavorite: false,
@@ -13,6 +15,7 @@ Page({
     drawerVisible: false,
     questionList: [],
     favoritesSynced: false,
+    favoriteQuestionIds: [],
     loading: false,
     loadingImages: {},
     errorImages: {},
@@ -60,7 +63,7 @@ Page({
         // 图片进入视口，加载图片
         const questionId = res.dataset.questionId;
         if (questionId) {
-          console.log('图片进入视口，开始加载:', questionId);
+          
           // 这里可以添加加载逻辑，例如设置loading状态
           const loadingImages = { ...this.data.loadingImages };
           loadingImages[questionId] = true;
@@ -86,8 +89,6 @@ Page({
       const app = getApp();
       const userId = app.globalData.userId;
       
-      console.log('加载错题，userId:', userId);
-      
       const result = await wx.cloud.callFunction({
         name: 'getUserWrongQuestions',
         data: {
@@ -95,43 +96,30 @@ Page({
         }
       });
       
-      console.log('获取错题数据结果:', result.result);
-      
       let questions = [];
       if (result.result && result.result.success && Array.isArray(result.result.questions)) {
         questions = result.result.questions;
       }
       
-      console.log('错题数据:', questions);
-      
-      if (questions.length > 0) {
-        console.log('第一题详情:', {
-          questionContent: questions[0].questionContent,
-          options: questions[0].options,
-          optionsCount: questions[0].options ? questions[0].options.length : 0,
-          correctAnswers: questions[0].correctAnswers || (questions[0].answer ? [questions[0].answer] : []),
-          type: questions[0].type
-        });
-      }
-      
       if (!questions || questions.length === 0) {
         wx.hideLoading();
-        wx.showToast({
-          title: '暂无错题',
-          icon: 'none'
+        this.setData({
+          questions: [],
+          isEmpty: true
         });
         return;
       }
-      
+
       // 为每个题目添加answered属性，为每个选项添加status属性
       const formattedQuestions = questions.map((q, index) => {
         const optionsWithStatus = q.options.map(opt => ({
           ...opt,
           status: ''
         }));
-        console.log('初始化错题', index, '选项状态:', optionsWithStatus.map(opt => ({id: opt.id, status: opt.status})));
+        
         return {
           ...q,
+          type: this.normalizeType(q.type),
           answered: false,
           options: optionsWithStatus
         };
@@ -149,9 +137,12 @@ Page({
           userAnswers: new Array(formattedQuestions.length).fill(null),
           chosenum: null,
           moreArr: {},
+          selectedCount: 0,
+          isEmpty: false,
           questionResults: new Array(formattedQuestions.length).fill(null),
           questionList: questionList,
           favoritesSynced: false,
+          favoriteQuestionIds: [],
           loading: false
         });
       
@@ -176,7 +167,7 @@ Page({
     const optionId = dataset.optionId || dataset.optionid || dataset['option-id'] || dataset.optionId;
     const currentQuestionIndex = this.data.currentQuestionIndex;
 
-    console.log('selectAnswer:', {currentQuestionIndex, optionId});
+    
 
     if (!this.data.questions || !this.data.questions[currentQuestionIndex]) {
       console.error('题目数据未找到，currentQuestionIndex:', currentQuestionIndex);
@@ -197,8 +188,11 @@ Page({
     }
 
     const setDataObj = {};
+    let newStatus;
+    // 单选题、判断题：点击即判；多选题：选对部分继续选，选错或选全立即判
+    const isImmediateType = currentQuestion.type === 'single' || currentQuestion.type === 'judge';
 
-    if (currentQuestion.type === 'single') {
+    if (isImmediateType) {
       currentQuestion.options.forEach((opt, idx) => {
         const path = `questions[${currentQuestionIndex}].options[${idx}].status`;
         setDataObj[path] = opt.id === optionId ? 'select' : '';
@@ -206,26 +200,61 @@ Page({
 
       setDataObj.chosenum = optionId;
 
-      console.log('设置单选题选项状态:', currentQuestionIndex, currentQuestion.options.map(opt => ({id: opt.id, status: opt.id === optionId ? 'select' : ''})));
+      
     } else {
+      // 多选题：切换选项状态后立即判断
       const currentStatus = currentQuestion.options[optionIndex].status;
-      const newStatus = currentStatus === 'select' ? '' : 'select';
+      newStatus = currentStatus === 'select' ? '' : 'select';
       const path = `questions[${currentQuestionIndex}].options[${optionIndex}].status`;
       setDataObj[path] = newStatus;
 
       const currentMoreArr = this.data.moreArr || {};
-      setDataObj.moreArr = {
+      const nextMoreArr = {
         ...currentMoreArr,
         [optionId]: newStatus === 'select'
       };
+      setDataObj.moreArr = nextMoreArr;
+      setDataObj.selectedCount = Object.keys(nextMoreArr).filter(key => nextMoreArr[key]).length;
 
-      console.log('设置多选题选项状态:', currentQuestionIndex, {optionId, newStatus});
+      
+
+      this.setData(setDataObj);
+
+      // 多选题立即判断逻辑
+      if (newStatus === 'select') {
+        const isCorrectOption = currentQuestion.correctAnswers.includes(optionId);
+
+        if (!isCorrectOption) {
+          this.submitAnswer();
+          return;
+        }
+
+        const allCorrectSelected = currentQuestion.correctAnswers.every(
+          id => nextMoreArr[id]
+        );
+
+        if (allCorrectSelected) {
+          this.submitAnswer();
+        }
+      }
+      return;
     }
 
     this.setData(setDataObj);
 
-    // 立即提交答案，不延迟
-    this.submitAnswer();
+    if (isImmediateType) {
+      this.submitAnswer();
+    }
+  },
+
+  // 归一化题型：兼容数据库中的中文取值（单选题/多选题/判断题）
+  normalizeType(type) {
+    const typeMap = {
+      '单选题': 'single',
+      '多选题': 'multiple',
+      '判断题': 'judge'
+    };
+    return typeMap[type] || type || 'single';
   },
 
   async submitAnswer() {
@@ -236,7 +265,7 @@ Page({
     
     let userAnswer = [];
     
-    if (currentQuestion.type === 'single') {
+    if (currentQuestion.type === 'single' || currentQuestion.type === 'judge') {
       if (!this.data.chosenum) {
         wx.showToast({
           title: '请选择答案',
@@ -246,7 +275,7 @@ Page({
       }
       userAnswer = [this.data.chosenum];
     } else {
-      userAnswer = Object.keys(this.data.moreArr);
+      userAnswer = Object.keys(this.data.moreArr).filter(key => this.data.moreArr[key]);
       if (userAnswer.length === 0) {
         wx.showToast({
           title: '请选择答案',
@@ -285,12 +314,8 @@ Page({
       questionResults,
       userAnswers
     });
-    
+
     await this.saveAnswerRecord(currentQuestion.questionId, userAnswer, isCorrect);
-    
-    if (isCorrect) {
-      await this.removeFromWrongQuestions(currentQuestion.questionId);
-    }
   },
 
   compareAnswers(userAnswer, correctAnswers) {
@@ -307,6 +332,7 @@ Page({
     const currentQuestion = this.data.questions[this.data.currentQuestionIndex];
     const now = new Date().getTime();
 
+    // 本地 answerHistory 仅做快速恢复用，权威数据源是云端 user_answers
     let answerHistory = wx.getStorageSync('answerHistory') || [];
     answerHistory.push({
       questionId: currentQuestion.questionId,
@@ -319,41 +345,21 @@ Page({
     }
     wx.setStorageSync('answerHistory', answerHistory);
 
-    if (!isCorrect) {
-      let wrongQuestions = wx.getStorageSync('wrongQuestions') || [];
-      if (!wrongQuestions.includes(currentQuestion.questionId)) {
-        wrongQuestions.push(currentQuestion.questionId);
-        wx.setStorageSync('wrongQuestions', wrongQuestions);
-      }
-    }
-
-    let totalQuestions = wx.getStorageSync('totalQuestions') || 0;
-    let correctAnswers = wx.getStorageSync('correctAnswers') || 0;
-    
-    totalQuestions++;
-    if (isCorrect) {
-      correctAnswers++;
-    }
-
-    wx.setStorageSync('totalQuestions', totalQuestions);
-    wx.setStorageSync('correctAnswers', correctAnswers);
+    // 注：不再维护本地 wrongQuestions/totalQuestions/correctAnswers 统计
+    // saveUserAnswer 云函数已自动更新 users 表统计 + user_wrong_questions
 
     if (userId) {
       try {
-        console.log('准备调用saveUserAnswer云函数，参数:', {
-          userId: userId,
-          questionId: currentQuestion.questionId,
-          userAnswer: userAnswer,
-          correctAnswer: currentQuestion.correctAnswers || (currentQuestion.answer ? [currentQuestion.answer] : []),
-          isCorrect: isCorrect,
-          spendTime: 0
-        });
+        
         
         const result = await wx.cloud.callFunction({
           name: 'saveUserAnswer',
           data: {
             userId: userId,
             questionId: currentQuestion.questionId,
+            bankId: currentQuestion.bankId || '',
+            chapterId: currentQuestion.chapterId || '',
+            source: 'wrong',
             userAnswer: userAnswer,
             correctAnswer: currentQuestion.correctAnswers || (currentQuestion.answer ? [currentQuestion.answer] : []),
             isCorrect: isCorrect,
@@ -361,10 +367,10 @@ Page({
           }
         });
 
-        console.log('saveUserAnswer云函数返回结果:', result);
+        
         
         if (result.result.success) {
-          console.log('答题记录已保存到云端');
+          
         } else {
           console.error('保存答题记录到云端失败:', result.result);
         }
@@ -390,7 +396,6 @@ Page({
       });
       
       if (result.result && result.result.success) {
-        console.log('错题移除成功');
       } else {
         console.error('错题移除失败:', result.result);
       }
@@ -399,62 +404,162 @@ Page({
     }
   },
 
+  // 手动移出错题本
+  async onRemoveFromWrong(e) {
+    const questionId = e.currentTarget.dataset.questionId;
+    if (!questionId) return;
+
+    // 二次确认，避免误操作
+    const modalRes = await new Promise(function(resolve) {
+      wx.showModal({
+        title: '提示',
+        content: '确定将这道题移出错题本吗？',
+        confirmText: '移出',
+        confirmColor: '#e53935',
+        success: resolve,
+        fail: resolve
+      });
+    });
+    if (!modalRes.confirm) return;
+
+    wx.showLoading({ title: '处理中...', mask: true });
+
+    try {
+      const app = getApp();
+      const result = await wx.cloud.callFunction({
+        name: 'removeFromWrongQuestions',
+        data: {
+          userId: app.globalData.userId,
+          questionId: questionId
+        }
+      });
+
+      if (!(result.result && result.result.success)) {
+        wx.hideLoading();
+        wx.showToast({
+          title: (result.result && result.result.message) || '移除失败',
+          icon: 'none'
+        });
+        return;
+      }
+
+      // 定位该题在本地列表中的下标
+      const questions = this.data.questions.slice();
+      const userAnswers = this.data.userAnswers.slice();
+      const questionResults = this.data.questionResults.slice();
+      let removeIndex = -1;
+      for (let i = 0; i < questions.length; i++) {
+        if (questions[i].questionId === questionId) {
+          removeIndex = i;
+          break;
+        }
+      }
+      if (removeIndex === -1) {
+        wx.hideLoading();
+        return;
+      }
+
+      questions.splice(removeIndex, 1);
+      userAnswers.splice(removeIndex, 1);
+      questionResults.splice(removeIndex, 1);
+
+      // 同步清理本地缓存中的错题ID
+      const localWrong = wx.getStorageSync('wrongQuestions') || [];
+      const localIndex = localWrong.indexOf(questionId);
+      if (localIndex > -1) {
+        localWrong.splice(localIndex, 1);
+        wx.setStorageSync('wrongQuestions', localWrong);
+      }
+
+      // 重建抽屉列表数据
+      const questionList = questions.map(function(q, index) {
+        return {
+          id: q.questionId,
+          index: index,
+          chosenum: null,
+          judge: null
+        };
+      });
+
+      // 全部移除：显示空状态
+      if (questions.length === 0) {
+        this.setData({
+          questions: [],
+          userAnswers: [],
+          questionResults: [],
+          questionList: [],
+          currentQuestionIndex: 0,
+          isEmpty: true,
+          showAnswer: false,
+          isCorrect: null
+        });
+        wx.hideLoading();
+        wx.showToast({ title: '已移出错题本', icon: 'success' });
+        return;
+      }
+
+      // 调整当前题目下标，防止越界
+      let currentQuestionIndex = this.data.currentQuestionIndex;
+      if (removeIndex < currentQuestionIndex) {
+        currentQuestionIndex = currentQuestionIndex - 1;
+      } else if (removeIndex === currentQuestionIndex && currentQuestionIndex > questions.length - 1) {
+        currentQuestionIndex = questions.length - 1;
+      }
+
+      this.setData({
+        questions: questions,
+        userAnswers: userAnswers,
+        questionResults: questionResults,
+        questionList: questionList,
+        currentQuestionIndex: currentQuestionIndex
+      });
+
+      // 刷新新当前题目的答题/收藏状态
+      await this.loadCurrentQuestionState();
+
+      wx.hideLoading();
+      wx.showToast({ title: '已移出错题本', icon: 'success' });
+    } catch (error) {
+      console.error('移出错题本失败:', error);
+      wx.hideLoading();
+      wx.showToast({ title: '移除失败', icon: 'none' });
+    }
+  },
+
   async toggleFavorite() {
     const app = getApp();
     const userId = app.globalData.userId;
-    const currentQuestion = this.data.questions[this.data.currentQuestionIndex];
-    const favoriteQuestions = wx.getStorageSync('favoriteQuestions') || [];
-    let isFavorite = this.data.isFavorite;
-    
-    if (!currentQuestion || !currentQuestion.questionId) {
-      console.error('当前题目数据不存在');
-      return;
-    }
-    
-    if (isFavorite) {
-      const index = favoriteQuestions.indexOf(currentQuestion.questionId);
-      if (index > -1) {
-        favoriteQuestions.splice(index, 1);
-      }
-      isFavorite = false;
-      wx.showToast({
-        title: '已取消收藏',
-        icon: 'success'
-      });
+    const { questions, currentQuestionIndex, favoriteQuestionIds, isFavorite: currentFav } = this.data;
+    const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion || !currentQuestion.questionId) return;
+
+    const ids = favoriteQuestionIds.slice();
+    const targetFav = !currentFav;
+
+    if (targetFav) {
+      if (ids.indexOf(currentQuestion.questionId) === -1) ids.push(currentQuestion.questionId);
+      wx.showToast({ title: '已收藏', icon: 'success' });
     } else {
-      favoriteQuestions.push(currentQuestion.questionId);
-      isFavorite = true;
-      wx.showToast({
-        title: '已收藏',
-        icon: 'success'
-      });
+      const idx = ids.indexOf(currentQuestion.questionId);
+      if (idx > -1) ids.splice(idx, 1);
+      wx.showToast({ title: '已取消收藏', icon: 'success' });
     }
-    
-    wx.setStorageSync('favoriteQuestions', favoriteQuestions);
-    
-    this.setData({
-      isFavorite: isFavorite
-    });
-    
-    // 同步到云端
+
+    this.setData({ favoriteQuestionIds: ids, isFavorite: targetFav });
+
     if (userId) {
       try {
-        const result = await wx.cloud.callFunction({
+        const res = await wx.cloud.callFunction({
           name: 'toggleFavorite',
-          data: {
-            userId: userId,
-            questionId: currentQuestion.questionId,
-            isFavorite: isFavorite
-          }
+          data: { userId: userId, questionId: currentQuestion.questionId, isFavorite: targetFav }
         });
-        
-        if (result.result && result.result.success) {
-          console.log('收藏状态已同步到云端');
-        } else {
-          console.error('同步收藏状态到云端失败:', result.result);
+        if (!(res.result && res.result.success)) {
+          console.error('同步收藏失败:', res.result);
+          this.setData({ favoriteQuestionIds: favoriteQuestionIds, isFavorite: currentFav });
         }
       } catch (error) {
-        console.error('同步收藏状态失败:', error);
+        console.error('同步收藏云函数失败:', error);
+        this.setData({ favoriteQuestionIds: favoriteQuestionIds, isFavorite: currentFav });
       }
     }
   },
@@ -462,60 +567,29 @@ Page({
   async checkIfFavorite() {
     const app = getApp();
     const userId = app.globalData.userId;
-    const currentQuestion = this.data.questions[this.data.currentQuestionIndex];
-    
-    if (!currentQuestion || !currentQuestion.questionId) {
-      console.error('当前题目数据不存在');
-      return;
-    }
-    
-    // 先从本地缓存获取
-    const favoriteQuestions = wx.getStorageSync('favoriteQuestions') || [];
-    let isFavorite = favoriteQuestions.includes(currentQuestion.questionId);
-    
-    // 立即显示本地缓存的收藏状态
-    this.setData({
-      isFavorite: isFavorite
-    });
-    
-    // 如果有用户ID，并且本地缓存为空或已过期，从云端获取最新的收藏状态
-    if (userId && (favoriteQuestions.length === 0 || !this.data.favoritesSynced)) {
-      try {
-        const result = await wx.cloud.callFunction({
-          name: 'getUserData',
-          data: {
-            userId: userId
-          }
-        });
-        
-        if (result.result && result.result.success && result.result.data) {
-          const userData = result.result.data;
-          const favorites = userData.favorites || [];
-          const questionIds = favorites.map(f => f.questionId);
-          
-          // 更新本地缓存
-          wx.setStorageSync('favoriteQuestions', questionIds);
-          
-          // 标记已同步
-          this.setData({
-            favoritesSynced: true
-          });
-          
-          // 检查当前题目是否在收藏列表中
-          const currentIsFavorite = questionIds.includes(currentQuestion.questionId);
-          
-          // 如果状态发生变化，更新UI
-          if (currentIsFavorite !== isFavorite) {
-            this.setData({
-              isFavorite: currentIsFavorite
-            });
-          }
-          
-          console.log('从云端同步收藏状态:', currentQuestion.questionId, currentIsFavorite, 'favoritesCount:', favorites.length);
-        }
-      } catch (error) {
-        console.error('从云端获取收藏状态失败:', error);
+    const { questions, currentQuestionIndex, favoriteQuestionIds, favoritesSynced } = this.data;
+    const currentQuestion = questions[currentQuestionIndex];
+    if (!currentQuestion || !currentQuestion.questionId) return;
+
+    const isFavorite = favoriteQuestionIds.includes(currentQuestion.questionId);
+    this.setData({ isFavorite: isFavorite });
+
+    if (!userId) return;
+    if (favoritesSynced) return; // 已同步过
+
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'getUserData',
+        data: { userId: userId, needWrong: false, needChapterProgress: false }
+      });
+      if (result && result.result && result.result.success && result.result.data) {
+        const qids = (result.result.data.favorites || []).map(function(f) { return f.questionId; });
+        this.setData({ favoriteQuestionIds: qids, favoritesSynced: true });
+        const refreshed = qids.includes(currentQuestion.questionId);
+        if (refreshed !== isFavorite) this.setData({ isFavorite: refreshed });
       }
+    } catch (error) {
+      console.warn('checkIfFavorite 云端同步失败:', error);
     }
   },
 
@@ -532,7 +606,8 @@ Page({
         showAnswer: false,
         isCorrect: null,
         chosenum: null,
-        moreArr: {}
+        moreArr: {},
+        selectedCount: 0
       });
     }
     
@@ -561,18 +636,10 @@ Page({
     });
   },
 
-  submitExam() {
-    const correctCount = this.data.questionResults.filter(r => r === true).length;
-    const totalCount = this.data.questions.length;
-    const accuracy = ((correctCount / totalCount) * 100).toFixed(1);
-    
-    wx.showModal({
-      title: '答题完成',
-      content: `答对 ${correctCount} 题，正确率 ${accuracy}%`,
-      showCancel: false,
-      success: () => {
-        wx.navigateBack();
-      }
+  // 空状态：返回首页去刷题
+  goHome() {
+    wx.switchTab({
+      url: '/pages/index/index'
     });
   },
   
@@ -589,10 +656,10 @@ Page({
     if (currentQuestion && currentQuestion.imageUrl) {
       imageCache[currentQuestion.imageUrl] = true;
       this.setData({ imageCache });
-      console.log('图片添加到缓存:', currentQuestion.imageUrl);
+      
     }
     this.setData({ loadingImages, errorImages });
-    console.log('图片加载成功:', questionId);
+    
   },
   
   // 图片加载失败
@@ -603,13 +670,13 @@ Page({
     loadingImages[questionId] = false;
     errorImages[questionId] = true;
     this.setData({ loadingImages, errorImages });
-    console.log('图片加载失败:', questionId);
+    
   },
   
   // 重试加载图片
   retryLoadImage(e) {
     const questionId = e.currentTarget.dataset.questionId;
-    console.log('重试加载图片:', questionId);
+    
     
     // 重置错误状态
     const errorImages = { ...this.data.errorImages };
@@ -646,8 +713,7 @@ Page({
         current: imageUrl,
         urls: allImages,
         success: (res) => {
-          console.log('图片预览成功', res);
-        },
+          },
         fail: (err) => {
           console.error('图片预览失败', err);
           wx.showToast({
@@ -761,7 +827,6 @@ Page({
         current: imageUrl,
         urls: allImages,
         success: (res) => {
-          console.log('图片预览成功', res);
           this.setData({ imageMenuVisible: false });
         },
         fail: (err) => {
@@ -773,5 +838,19 @@ Page({
         }
       });
     }
+  },
+
+  onShareAppMessage: function() {
+    var q = (this.data.questions && this.data.questions[this.data.currentQuestionIndex]) || {};
+    var bankId = q.bankId || q.quizId || '';
+    var path = '/pages/quiz/quiz?id=' + encodeURIComponent(bankId) +
+      '&chapterId=' + encodeURIComponent(q.chapterId || '') +
+      '&questionId=' + encodeURIComponent(q.questionId || '');
+    return {
+      title: '快来看看这道题！ ——来自网络安全刷题站',
+      path: path,
+      imageUrl: 'cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/weda-uploader/b30bb99d6ec016c0c53126b13e92efda-网络安全刷题站.jpg',
+      fail: function(res) { wx.showToast({ title: '分享失败，请重试', icon: 'none' }); }
+    };
   }
 });

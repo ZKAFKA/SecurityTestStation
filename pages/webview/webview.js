@@ -17,7 +17,6 @@ Page({
       this.setData({
         url: decodedUrl
       });
-      console.log('加载网页:', decodedUrl);
     }
   },
 

@@ -1,7 +1,6 @@
 {
-  "usingComponents": {
-    "version-info":"../../components/versionInfo/index",
-    "news-list":"../../components/newsList/index"
-  },
-  "navigationBarBackgroundColor": "#fff"
+  "usingComponents": {},
+  "navigationBarBackgroundColor": "#0F172A",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#F8FAFC"
 }

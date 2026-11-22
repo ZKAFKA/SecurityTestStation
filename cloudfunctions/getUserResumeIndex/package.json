@@ -1,0 +1,9 @@
+{
+  "name": "getUserResumeIndex",
+  "version": "1.0.0",
+  "description": "动态计算用户章节继续答题位置",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

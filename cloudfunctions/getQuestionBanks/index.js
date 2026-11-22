@@ -11,26 +11,56 @@ exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
   
   try {
-    console.log('开始获取题库数据')
+    // 并行获取所有题库和所有章节数据（2次查询 vs N+1次）
+    // chapters 查询显式设 limit(1000)，避免默认 100 条上限导致统计不全
+    const [banksResult, chaptersResult] = await Promise.all([
+      db.collection('question_bank').orderBy('order', 'asc').get(),
+      db.collection('chapters').limit(1000).get()
+    ])
+
+    const questionBanks = banksResult.data
+    const allChapters = chaptersResult.data
+
+    // 按 bankName 分组统计章节
+    const bankStatsMap = {}
+    for (const chapter of allChapters) {
+      const name = chapter.bankName
+      if (!bankStatsMap[name]) {
+        bankStatsMap[name] = { chapterCount: 0, questionCount: 0 }
+      }
+      bankStatsMap[name].chapterCount += 1
+      bankStatsMap[name].questionCount += chapter.questionCount || 0
+    }
     
-    // 从question_bank集合读取所有题库数据，按order排序
-    const result = await db.collection('question_bank')
-      .orderBy('order', 'asc')
-      .get()
-    
-    const questionBanks = result.data
-    
-    console.log('获取题库数据成功，共', questionBanks.length, '个题库')
+    // 组装返回数据
+    const bankList = questionBanks.map(bank => {
+      const stats = bankStatsMap[bank.name] || { chapterCount: 0, questionCount: 0 }
+      
+      // 确定状态标签
+      let statusLabel = '已更新'
+      if (!bank.path || bank.path === '') {
+        statusLabel = '敬请期待'
+      } else if (bank.path.includes('CISP')) {
+        statusLabel = '高押密'
+      } else if (bank.path.includes('软考')) {
+        statusLabel = '历年卷'
+      }
+      
+      return {
+        ...bank,
+        questionCount: stats.questionCount,
+        chapterCount: stats.chapterCount,
+        statusLabel: statusLabel
+      }
+    })
     
     return {
       success: true,
-      data: questionBanks,
+      data: bankList,
       message: '题库数据获取成功'
     }
     
   } catch (error) {
-    console.error('获取题库数据失败:', error)
-    
     return {
       success: false,
       message: '获取题库数据失败',

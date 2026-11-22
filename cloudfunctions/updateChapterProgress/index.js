@@ -8,11 +8,11 @@ cloud.init({
 const db = cloud.database()
 const _ = db.command
 
-// 获取章节信息
+// 获取章节信息（chapterId 是字段值，不是文档 _id，必须用 where 查询）
 async function getChapterInfo(chapterId) {
  try {
- const result = await db.collection('chapters').doc(chapterId).get()
- return result.data
+ const result = await db.collection('chapters').where({ chapterId }).get()
+ return result.data && result.data.length > 0 ? result.data[0] : null
  } catch (error) {
  console.error('获取章节信息失败:', error)
  return null
@@ -83,10 +83,11 @@ async function updateProgressRecord(userId, chapterId, updateData) {
  const currentProgress = result.data[0]
 
  // 计算新的进度
+ let newTotalQuestions = updateData.totalQuestions !== undefined ? updateData.totalQuestions : currentProgress.totalQuestions
  let newCompletedQuestions = updateData.completedQuestions !== undefined ? updateData.completedQuestions : currentProgress.completedQuestions
  let newCorrectCount = updateData.correctCount !== undefined ? updateData.correctCount : currentProgress.correctCount
  let newWrongCount = updateData.wrongCount !== undefined ? updateData.wrongCount : currentProgress.wrongCount
- let newProgress = Math.round(newCompletedQuestions / (currentProgress.totalQuestions || 1) * 100)
+ let newProgress = newTotalQuestions > 0 ? Math.round(newCompletedQuestions / newTotalQuestions * 100) : 0
  let newIsCompleted = newProgress >= 100
 
  // 合并更新数据
@@ -165,11 +166,11 @@ async function batchUpdateProgressFromAnswers(userId, bankId, chapterId) {
 // 云函数入口函数
 exports.main = async (event, context) => {
  const wxContext = cloud.getWXContext()
- const { userId, bankId, chapterId, progressData, completed, total, progress, batchUpdate = false } = event
+ const { userId, bankId, chapterId } = event
 
  try {
- console.log('更新章节进度...')
- console.log('参数:', { userId, chapterId, batchUpdate, completed, total, progress })
+ console.log('更新章节进度（权威数据源：user_answers count）...')
+ console.log('参数:', { userId, chapterId, bankId })
 
  if (!userId || !chapterId) {
  return {
@@ -178,46 +179,51 @@ exports.main = async (event, context) => {
  }
  }
 
- let result = null
+ // 1. 先查该章节有多少条真实答题记录（权威数据源）
+ const answersResult = await db.collection('user_answers')
+ .where({ userId, chapterId })
+ .get()
 
- if (batchUpdate) {
- // 批量更新：根据答题记录计算进度
- result = await batchUpdateProgressFromAnswers(userId, bankId, chapterId)
- } else if (progressData || (completed !== undefined && total !== undefined)) {
- // 单独更新：使用提供的进度数据
- const actualProgressData = progressData || {
- completedQuestions: completed,
- totalQuestions: total,
- progress: progress
- };
+ const answers = answersResult.data || []
+ const completedQuestions = answers.length
+ const correctCount = answers.filter(function(a) { return a.isCorrect; }).length
+ const wrongCount = answers.filter(function(a) { return !a.isCorrect; }).length
+ const accuracy = completedQuestions > 0 ? Math.round(correctCount / completedQuestions * 100) : 0
+ const questionIds = answers.map(function(a) { return a.questionId; })
 
- const hasRecord = await hasProgressRecord(userId, chapterId)
-
- if (hasRecord) {
- // 更新现有记录
- result = await updateProgressRecord(userId, chapterId, actualProgressData)
- } else {
- // 创建新记录
+ // 2. 查 chapters 表拿章节元数据
  const chapterInfo = await getChapterInfo(chapterId)
  const chapterName = chapterInfo ? chapterInfo.chapterName : ''
- const totalQuestions = chapterInfo ? chapterInfo.questionCount || total || 0 : total || 0
- result = await createProgressRecord(userId, bankId, chapterId, chapterName, totalQuestions)
- // 然后更新进度
- result = await updateProgressRecord(userId, chapterId, actualProgressData)
- }
- } else {
- return {
- success: false,
- message: '请提供进度数据或启用批量更新'
- }
+ const totalQuestions = chapterInfo ? chapterInfo.questionCount : completedQuestions
+ const progress = totalQuestions > 0 ? Math.round(completedQuestions / totalQuestions * 100) : 0
+ const isCompleted = progress >= 100
+
+ // 3. 更新或创建 user_chapter_progress 记录（用真实 count 覆盖前端传值）
+ const progressData = {
+ bankId: bankId,
+ chapterName: chapterName,
+ totalQuestions: totalQuestions,
+ completedQuestions: completedQuestions,
+ correctCount: correctCount,
+ wrongCount: wrongCount,
+ accuracy: accuracy,
+ progress: progress,
+ isCompleted: isCompleted,
+ completedQuestionsList: questionIds,
+ lastStudyTime: Date.now()
  }
 
- if (!result) {
- return {
- success: false,
- message: '更新进度失败'
+ const hasRecord = await hasProgressRecord(userId, chapterId)
+ let result = null
+
+ if (hasRecord) {
+ result = await updateProgressRecord(userId, chapterId, progressData)
+ } else {
+ result = await createProgressRecord(userId, bankId, chapterId, chapterName || chapterId, totalQuestions)
+ result = await updateProgressRecord(userId, chapterId, progressData)
  }
- }
+
+ console.log('权威进度计算结果:', { completed: completedQuestions, correct: correctCount, wrong: wrongCount, total: totalQuestions, progress: progress })
 
  return {
  success: true,

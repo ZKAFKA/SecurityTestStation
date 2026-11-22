@@ -7,8 +7,10 @@
         <view class="question-container">
           <view class="question-inner">
             <view class="question-type">
-              <text wx:if="{{item.type === 'single'}}" class="type-single">单选题</text>
-              <text wx:else class="type-multiple">多选题</text>
+              <text wx:if="{{item.type === 'single' || item.type === '单选题'}}" class="type-single">单选题</text>
+              <text wx:elif="{{item.type === 'multiple' || item.type === '多选题'}}" class="type-multiple">多选题</text>
+              <text wx:elif="{{item.type === 'judge' || item.type === '判断题'}}" class="type-judge">判断题</text>
+              <text wx:else class="type-unknown">{{item.type || '未知题型'}}</text>
               <view class="favorite-btn" bindtap="toggleFavorite">
                 <image src="{{isFavorite ? '/images/icons/collected.png' : '/images/icons/uncollected.png'}}" mode="aspectFit"></image>
                 <text>{{isFavorite ? '已收藏' : '收藏'}}</text>
@@ -19,18 +21,20 @@
               {{item.questionContent}}
             </view>
             <view wx:if="{{item.imageUrl && item.imageUrl !== '无图片'}}">
-              <image 
-                class="question-image" 
-                src="{{errorImages[item.questionId] ? '/images/icons/error.png' : item.imageUrl}}" 
-                mode="aspectFit" 
-                bindload="onImageLoad" 
+              <image
+                wx:if="{{!errorImages[item.questionId]}}"
+                class="question-image"
+                src="{{item.imageUrl}}"
+                mode="aspectFit"
+                lazy-load="{{true}}"
+                bindload="onImageLoad"
                 binderror="onImageError"
                 bindtap="previewImage"
                 bindlongpress="showImageMenu"
                 data-image-url="{{item.imageUrl}}"
                 data-question-id="{{item.questionId}}"
               />
-              <view class="image-loading" wx:if="{{loadingImages[item.questionId]}}">
+              <view class="image-loading" wx:if="{{loadingImages[item.questionId] && !errorImages[item.questionId]}}">
                 <text>加载中...</text>
               </view>
               <view class="image-error" wx:if="{{errorImages[item.questionId]}}">
@@ -68,6 +72,11 @@
                 <text class="explanation-value">{{item.explanation}}</text>
               </view>
             </view>
+
+            <view wx:if="{{index === currentQuestionIndex}}" class="ad-container">
+              <ad-custom unit-id="adunit-b3308d023f61350e" bindload="adLoad" binderror="adError" bindclose="adClose"></ad-custom>
+            </view>
+
           </view>
         </view>
       </swiper-item>

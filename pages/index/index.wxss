@@ -1,125 +1,472 @@
-.poster {
-  height: 400rpx;
-  width: 100%;
-  margin-bottom: 10rpx;
-}
-
-.poster  swiper-item   image {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-}
-
-.template {
-  margin: 20rpx;
-  padding: 20rpx 0;
-}
-
-.template_list {
-  display: flex;
-  flex-wrap: wrap;
-}
-.template_item {
-  width: 25%;
-}
-
-.template_item image {
-  display: block;
-  width: 72rpx;
-  height: 72rpx;
-  margin: 0 auto;
-}
-
-.template_item text {
-  margin-top: 10rpx;
-  width: 100%;
-  display: block;
-  font-size: 24rpx;
-  line-height: 32rpx;
-  color: #878D96;
-  text-align: center;
-}
-.scene_list {
+/* ===== Hero Banner ===== */
+.hero-banner {
+  position: relative;
+  background: linear-gradient(160deg, #0F172A 0%, #1E293B 40%, #1E3A8A 100%);
+  padding: 32rpx 40rpx 56rpx;
   overflow: hidden;
-  flex-wrap: nowrap;
-  white-space: nowrap;
+}
+
+.hero-bg-glow {
+  position: absolute;
+  right: -40rpx;
+  top: -40rpx;
+  width: 300rpx;
+  height: 300rpx;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, rgba(15, 23, 42, 0) 70%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 30rpx;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 20rpx;
+  border-radius: 40rpx;
+  background: rgba(56, 189, 248, 0.12);
+  border: 2rpx solid rgba(56, 189, 248, 0.35);
   margin-bottom: 20rpx;
 }
 
-.scene_item {
-  display: inline-block;
-  padding: 56rpx 0 0 24rpx;
-  margin-left: 20rpx;
-  width: 240rpx;
-  height: 104rpx;
-  background-color: #f0f5ff;
-  border-radius: 10rpx;
-  border: 1rpx solid #d6e4ff;
+.hero-badge-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background: #38BDF8;
+  margin-right: 12rpx;
+  animation: hero-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
-.scene_title {
-  font-size: 32rpx;
-  line-height: 48rpx;
-  color: #0F62FE;
-  font-weight: 400;
+@keyframes hero-ping {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  75%,
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
 }
 
-.scene_cont {
+.hero-badge-text {
+  font-size: 22rpx;
+  color: #7DD3FC;
+}
+
+.hero-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.hero-title-wrap {
+  flex: 1;
+  padding-right: 24rpx;
+}
+
+.hero-title {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #ffffff;
+  line-height: 1.3;
+  display: block;
+}
+
+.hero-subtitle {
   font-size: 24rpx;
-  line-height: 36rpx;
-  color: #878D96;
-
+  color: #94A3B8;
+  margin-top: 12rpx;
+  display: block;
 }
 
-.common {
-  margin: 20rpx;
-  background-color: #fff;
-  border-radius: 16rpx;
+.hero-shield {
+  width: 140rpx;
+  height: 140rpx;
+  margin-top: -20rpx;
+  border-radius: 24rpx;
+  background: rgba(15, 23, 42, 0.5);
+  border: 2rpx solid rgba(21, 134, 183, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   overflow: hidden;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
 }
 
-.common_title {
-  padding: 28rpx 30rpx;
-  font-size: 32rpx;
-  line-height: 48rpx;
+.hero-shield-img {
+  width: 100%;
+  height: 100%;
+}
+
+/* ===== Content Wrap ===== */
+.content-wrap {
+  margin: -40rpx 28rpx 40rpx;
+  position: relative;
+  z-index: 10;
+}
+
+/* ===== Resume Learning Card ===== */
+.resume-card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 32rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 4rpx 24rpx rgba(15, 23, 42, 0.08);
+  border: 2rpx solid #F1F5F9;
+}
+
+.resume-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.resume-tag {
+  display: flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  background: #EFF6FF;
+  border-radius: 8rpx;
+}
+
+.resume-tag-text {
+  font-size: 22rpx;
   font-weight: 600;
-  color: #333333;
-  border-bottom: 1rpx solid #f0f0f0;
+  color: #2563EB;
 }
 
-.news_list {
-  padding: 0 30rpx 20rpx;
+.resume-time {
+  display: flex;
+  align-items: center;
 }
 
-.partners_list {
+.resume-time-text {
+  font-size: 22rpx;
+  color: #94A3B8;
+}
+
+.resume-body {
+  margin-bottom: 28rpx;
+}
+
+.resume-bank-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #0F172A;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.resume-chapter-info {
+  font-size: 24rpx;
+  color: #64748B;
+  display: block;
+}
+
+.resume-progress-wrap {
+  margin-bottom: 28rpx;
+}
+
+.resume-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.resume-progress-label {
+  font-size: 24rpx;
+  color: #64748B;
+}
+
+.resume-progress-pct {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #2563EB;
+}
+
+.resume-progress-bar-bg {
+  width: 100%;
+  height: 12rpx;
+  background: #F1F5F9;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.resume-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3B82F6 0%, #4F46E5 100%);
+  border-radius: 12rpx;
+}
+
+.resume-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 24rpx;
+  background: linear-gradient(90deg, #2563EB 0%, #1D4ED8 100%);
+  border-radius: 20rpx;
+}
+
+.resume-btn-text {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.login-card-body {
+  margin-bottom: 28rpx;
+}
+
+.login-card-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #0F172A;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.login-card-desc {
+  font-size: 24rpx;
+  color: #64748B;
+  display: block;
+  line-height: 1.5;
+}
+
+/* ===== 练习进度加载中 ===== */
+.loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64rpx 32rpx;
+}
+
+.loading-spinner {
+  width: 48rpx;
+  height: 48rpx;
+  border: 6rpx solid #E2E8F0;
+  border-top-color: #2563EB;
+  border-radius: 50%;
+  animation: loading-spin 0.8s linear infinite;
+  margin-bottom: 20rpx;
+}
+
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 24rpx;
+  color: #94A3B8;
+}
+
+/* ===== Question Bank Section ===== */
+.bank-section {
+  margin-bottom: 32rpx;
+}
+
+.bank-section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #1E293B;
+  margin-bottom: 20rpx;
+  margin-left: 10rpx;
+}
+
+.bank-grid {
   display: flex;
   flex-wrap: wrap;
-  padding: 0 20rpx 10rpx;
+  justify-content: space-between;
 }
 
-.partners_item {
-  margin: 20rpx 10rpx 0 0;
-  flex: 1 1 20rpx;
-  height: 60rpx;
-  padding: 20rpx 0;
-  box-shadow: rgb(242, 244, 248) 0px 1px 10px 1px;
-
+.bank-card {
+  width: 48.5%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 20rpx;
+  border: 2rpx solid #F1F5F9;
+  padding: 28rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  min-height: 200rpx;
 }
 
-.partners_item image {
-  width: 190rpx;
-  height: 60rpx;
+.bank-card-top {
+  flex: 1;
 }
 
-.news_more {
-  float:right;
-  font-weight: 400;
-  padding-right: 20rpx;
+.bank-card-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #0F172A;
+  display: block;
+  margin-bottom: 8rpx;
 }
-.news_more text {
+
+.bank-card-sub {
+  font-size: 22rpx;
+  color: #94A3B8;
+  display: block;
+  line-height: 1.4;
+}
+
+.bank-card-bottom {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 20rpx;
+}
+
+.bank-card-count-wrap {
+  padding: 4rpx 14rpx;
+  background: #EFF6FF;
+  border-radius: 8rpx;
+}
+
+.bank-card-count {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #2563EB;
+}
+
+/* ===== Official Account Banner ===== */
+.official-banner {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 24rpx;
+  margin-bottom: 40rpx;
+  border: 2rpx solid #F1F5F9;
+  box-shadow: 0 2rpx 16rpx rgba(15, 23, 42, 0.04);
+}
+
+.official-row {
+  display: flex;
+  align-items: center;
+}
+
+.official-icon {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 24rpx;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 20rpx;
+}
+
+.official-icon-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 24rpx;
+}
+
+.official-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.official-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #1E293B;
+}
+
+.official-desc {
+  font-size: 22rpx;
+  color: #64748B;
+  display: block;
+  line-height: 1.4;
+}
+
+.official-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 14rpx 26rpx;
+  background: #2563EB;
+  border-radius: 40rpx;
+  margin-left: 16rpx;
+}
+
+.official-btn-text {
   font-size: 24rpx;
-  vertical-align: top;
-  line-height: 36rpx;
-  color: #878D96;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+/* ===== 公众号二维码浮层 ===== */
+.qrcode-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrcode-modal {
+  width: 560rpx;
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qrcode-img-wrap {
+  width: 480rpx;
+  height: 480rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: #F8FAFC;
+}
+
+.qrcode-img {
+  width: 100%;
+  height: 100%;
+}
+
+.qrcode-tip {
+  font-size: 26rpx;
+  color: #475569;
+  margin-top: 24rpx;
+  text-align: center;
+}
+
+.qrcode-close-btn {
+  margin-top: 28rpx;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx;
+  background: #F1F5F9;
+  border-radius: 40rpx;
+}
+
+.qrcode-close-text {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #475569;
 }

@@ -1,89 +1,247 @@
 <!--pages/my.wxml-->
-<view class="container">
-  <!-- 顶部用户信息卡片 -->
-  <view class="user-card">
-    <image class="user-background-image" src="{{backgroundImageUrl}}" mode="aspectFill"></image>
-    <view class="user-background-overlay"></view>
-    <view class="user-section" bindtap="onUserTap">
-      <view class="user-avatar-wrapper">
-        <view class="user-avatar">
-          <image wx:if="{{userInfo && userInfo.avatarUrl}}" src="{{userInfo.avatarUrl}}" class="user-avatar-image" mode="aspectFill"></image>
-          <image wx:else src="/images/icons/header-unlogin.png" class="user-avatar-image" mode="aspectFill"></image>
+<view class="page">
+  <view class="content-wrap">
+
+    <!-- 用户信息卡 -->
+    <view class="user-profile-card">
+      <!-- 背景图层 -->
+      <image wx:if="{{cardBgUrl}}" src="{{cardBgUrl}}" class="card-bg-img" mode="aspectFill"></image>
+      <view class="card-bg-overlay"></view>
+      <view class="card-glow-deco"></view>
+
+      <view class="user-header" bindtap="onUserTap">
+        <!-- 头像 -->
+        <view class="avatar-ring">
+          <view class="avatar-inner">
+            <image src="{{userInfo && userInfo.avatarUrl}}" class="avatar-img" mode="aspectFill"></image>
+          </view>
+          <view class="verified-badge">
+            <text class="verified-check">✓</text>
+          </view>
+        </view>
+
+        <!-- 用户信息 -->
+        <view class="user-info-block">
+          <text class="user-nickname">{{userInfo && userInfo.nickName ? userInfo.nickName : '微信用户'}}</text>
+          <view class="user-meta">
+            <text class="meta-uid">UID: {{uid || '20268841'}}</text>
+            <text class="meta-dot">•</text>
+            <view class="meta-checkin">
+              <text class="checkin-icon">✓</text>
+              <text class="checkin-text">已连续打卡 {{checkinDays || 0}} 天</text>
+            </view>
+          </view>
         </view>
       </view>
-      <view class="user-info">
-        <text class="user-name">{{userInfo && userInfo.nickName ? userInfo.nickName : '未登录'}}</text>
-        <text class="user-desc">网络安全</text>
+
+      <!-- 统计条 -->
+      <view class="stats-strip">
+        <view class="stats-col">
+          <text class="stats-label">累计刷题</text>
+          <view class="stats-num-wrap">
+            <text class="stats-num">{{totalQuestionsCount}}</text>
+            <text class="stats-unit">道</text>
+          </view>
+        </view>
+        <view class="stats-sep"></view>
+        <view class="stats-col">
+          <text class="stats-label">正确率</text>
+          <view class="stats-num-wrap">
+            <text class="stats-num stats-num-accent">{{correctRateDisplay}}</text>
+            <text class="stats-unit">%</text>
+          </view>
+        </view>
+        <view class="stats-sep"></view>
+        <view class="stats-col">
+          <text class="stats-label">累计打卡</text>
+          <view class="stats-num-wrap">
+            <text class="stats-num">{{totalCheckinDays}}</text>
+            <text class="stats-unit">天</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 当前备考目标 -->
+    <view class="exam-target-card" bindtap="openTargetModal">
+      <view class="card-glow-deco card-glow-purple"></view>
+      <view class="target-compact">
+        <!-- 左：标题栏 -->
+        <view class="target-side">
+          <view class="target-title-bar"></view>
+          <text class="target-title">当前备考目标</text>
+        </view>
+
+        <!-- 空状态 -->
+        <block wx:if="{{!examBankId}}">
+          <view class="target-empty">
+            <text class="target-empty-text">点击设置备考目标</text>
+          </view>
+          <view class="target-empty-right">
+            <text class="target-empty-plus">＋</text>
+          </view>
+        </block>
+
+        <!-- 已设置：正常显示 -->
+        <block wx:else>
+          <!-- 中：考试名 + 进度条 -->
+          <view class="target-main">
+            <text class="target-exam-name">{{examBankTitle}}</text>
+            <view class="progress-row">
+              <view class="progress-bar-bg">
+                <view class="progress-bar-fill" style="width: {{masteryPct || 0}}%"></view>
+              </view>
+              <text class="progress-pct">{{masteryPct || 0}}%</text>
+            </view>
+          </view>
+
+          <!-- 右：倒计时 -->
+          <view class="target-countdown">
+            <text class="countdown-num">{{countdownDays}}</text>
+            <text class="countdown-unit">天</text>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 快捷入口 -->
+    <view class="shortcut-grid">
+      <!-- 错题本 -->
+      <view class="shortcut-card sc-red" bindtap="goToWrongQuestions">
+        <view class="shortcut-icon-wrap">
+          <image class="shortcut-icon-img" src="/images/icons/wrong.png" mode="aspectFit" />
+        </view>
+        <text class="shortcut-title">错题本</text>
+        <text class="shortcut-desc">{{wrongQuestionsCount}} 题</text>
+      </view>
+
+      <!-- 收藏夹 -->
+      <view class="shortcut-card sc-amber" bindtap="goToFavoriteQuestions">
+        <view class="shortcut-icon-wrap sc-amber-wrap">
+          <image class="shortcut-icon-img" src="/images/icons/collect.png" mode="aspectFit" />
+        </view>
+        <text class="shortcut-title">收藏夹</text>
+        <text class="shortcut-desc">{{favoriteQuestionsCount}} 题</text>
+      </view>
+
+      <!-- 备考资料 -->
+      <view class="shortcut-card sc-blue" bindtap="showMaterialModal">
+        <view class="shortcut-icon-wrap sc-blue-wrap">
+          <image class="shortcut-icon-img" src="/images/icons/material.png" mode="aspectFit" />
+        </view>
+        <text class="shortcut-title">备考资料</text>
+        <text class="shortcut-desc">离线学习</text>
+      </view>
+    </view>
+
+    <!-- 设置列表 -->
+    <view class="settings-card">
+      <!-- 打卡提醒 -->
+      <view class="settings-item">
+        <view class="settings-item-left">
+          <view class="settings-icon-wrap si-blue">
+            <image class="settings-icon-img" src="/images/icons/remind.png" mode="aspectFit" />
+          </view>
+          <view class="settings-title-wrap">
+            <text class="settings-title">每日打卡提醒</text>
+            <text class="settings-subtitle">打卡提醒仅生效一次，再次进入该页面自动续约</text>
+          </view>
+        </view>
+        <switch class="reminder-switch" checked="{{checkinReminder}}" color="#2563EB" bindchange="onReminderChange"/>
+      </view>
+
+      <!-- 联系我们 -->
+      <view class="settings-item" bindtap="contactUs">
+        <view class="settings-item-left">
+          <view class="settings-icon-wrap si-indigo">
+            <image class="settings-icon-img" src="/images/icons/contactus.png" mode="aspectFit" />
+          </view>
+          <text class="settings-title">联系我们</text>
+        </view>
+        <view class="settings-item-right">
+          <text class="settings-right-text">微信公众号</text>
+          <text class="settings-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 通用设置 -->
+      <view class="settings-item" bindtap="aboutUs">
+        <view class="settings-item-left">
+          <view class="settings-icon-wrap si-gray">
+            <image class="settings-icon-img" src="/images/icons/settings.png" mode="aspectFit" />
+          </view>
+          <text class="settings-title">通用设置</text>
+        </view>
+        <view class="settings-item-right">
+          <text class="settings-arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 考试目标设置弹窗 -->
+  <view wx:if="{{showTargetModal}}" class="target-modal-mask" bindtap="closeTargetModal">
+    <view class="target-modal-panel" catchtap="noop">
+      <view class="target-modal-header">
+        <text class="target-modal-title">设置备考目标</text>
+        <view class="target-modal-close" bindtap="closeTargetModal">✕</view>
+      </view>
+
+      <view class="target-modal-body">
+        <!-- 题库选择 -->
+        <view class="target-modal-row">
+          <text class="target-modal-label">选择目标</text>
+          <picker mode="selector" range="{{bankRange}}" value="{{tempBankIdx}}" bindchange="onBankPick">
+            <view class="target-picker-value">
+              <text class="target-picker-text">{{bankRange[tempBankIdx] || '请选择'}}</text>
+              <text class="target-picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+
+        <!-- 日期选择 -->
+        <view class="target-modal-row">
+          <text class="target-modal-label">考试日期</text>
+          <picker mode="date" value="{{tempExamDate}}" bindchange="onDatePick" start="2025-01-01" end="2030-12-31">
+            <view class="target-picker-value">
+              <text class="target-picker-text">{{tempExamDate}}</text>
+              <text class="target-picker-arrow">›</text>
+            </view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="target-modal-footer">
+        <view class="target-modal-btn btn-cancel" bindtap="closeTargetModal">取消</view>
+        <view class="target-modal-btn btn-confirm" bindtap="confirmTarget">确认</view>
       </view>
     </view>
   </view>
 
-  <!-- 浮动统计卡片 -->
-  <view class="floating-stats-card">
-    <view class="stats-item">
-      <text class="stats-label">今日进度</text>
-      <text class="stats-number">{{todayProgress}}</text>
-    </view>
-    <view class="stats-divider"></view>
-    <view class="stats-item">
-      <text class="stats-label">总刷题数</text>
-      <text class="stats-number">{{totalQuestionsCount}}</text>
-    </view>
-  </view>
-
-  <!-- 功能菜单卡片 -->
-  <view class="menu-card">
-    <view class="menu-section">
-      <view class="menu-item" bindtap="goToWrongQuestions">
-        <view class="menu-icon-wrapper">
-          <image src="/images/icons/wronglist.png" class="menu-icon" mode="aspectFit"></image>
-        </view>
-        <view class="menu-content">
-          <text class="menu-title">错题本</text>
-          <text class="menu-desc">查看和复习错题</text>
-        </view>
-        <!-- 错题数量 -->
-        <text class="menu-count">{{wrongQuestionsCount}}</text>
+  <!-- 备考资料：关注公众号弹窗 -->
+  <view wx:if="{{showMaterialModal}}" class="material-modal-mask" bindtap="closeMaterialModal">
+    <view class="material-modal-panel" catchtap="noop">
+      <view class="material-modal-close" bindtap="closeMaterialModal">✕</view>
+      <view class="material-modal-title">关注公众号获取备考资料</view>
+      <view class="material-qrcode-wrap">
+        <image class="material-qrcode" src="{{qrcodeUrl}}" mode="aspectFit" show-menu-by-longpress="{{true}}"></image>
       </view>
-      <view class="menu-divider"></view>
-      <view class="menu-item" bindtap="goToFavoriteQuestions">
-        <view class="menu-icon-wrapper">
-          <image src="/images/icons/collectlist.png" class="menu-icon" mode="aspectFit"></image>
-        </view>
-        <view class="menu-content">
-          <text class="menu-title">收藏题目</text>
-          <text class="menu-desc">查看收藏的题目</text>
-        </view>
-        <!-- 收藏数量 -->
-        <text class="menu-count">{{favoriteQuestionsCount}}</text>
-      </view>
-    </view>
-    <view class="menu-divider"></view>
-    <view class="menu-section">
-      <view class="menu-item" bindtap="contactUs">
-        <view class="menu-icon-wrapper">
-          <image src="/images/icons/contactus.png" class="menu-icon" mode="aspectFit"></image>
-        </view>
-        <view class="menu-content">
-          <text class="menu-title">联系我们</text>
-          <text class="menu-desc">有问题随时联系</text>
-        </view>
-      </view>
-      <view class="menu-divider"></view>
-      <view class="menu-item" bindtap="aboutUs">
-        <view class="menu-icon-wrapper">
-          <image src="/images/icons/aboutus.png" class="menu-icon" mode="aspectFit"></image>
-        </view>
-        <view class="menu-content">
-          <text class="menu-title">关于我们</text>
-          <text class="menu-desc">了解更多信息</text>
-        </view>
-      </view>
+      <view class="material-modal-tip">长按二维码识别关注</view>
+      <view class="material-modal-desc">关注「网络安全研究站」公众号，发送关键字“备考资料”</view>
     </view>
   </view>
 
-  <!-- 底部版本信息 -->
-  <view class="version-info">
-    <text class="version-text">版本号: 1.0.0</text>
+  <!-- 联系我们：公众号弹窗 -->
+  <view wx:if="{{showContactModal}}" class="material-modal-mask" bindtap="closeContactModal">
+    <view class="material-modal-panel" catchtap="noop">
+      <view class="material-modal-close" bindtap="closeContactModal">✕</view>
+      <view class="material-modal-title">联系我们</view>
+      <view class="contact-modal-desc">如有任何问题或建议，欢迎通过公众号「网络安全研究站」后台留言</view>
+      <view class="material-qrcode-wrap">
+        <image class="material-qrcode" src="{{qrcodeUrl}}" mode="aspectFit" show-menu-by-longpress="{{true}}"></image>
+      </view>
+      <view class="material-modal-tip">长按二维码识别关注</view>
+    </view>
   </view>
 </view>

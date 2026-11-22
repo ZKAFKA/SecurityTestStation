@@ -1,4 +1,10 @@
 <view class="container">
+  <!-- 左滑重做提示 -->
+  <view wx:if="{{showRedoHint}}" class="redo-hint" bindtap="hideRedoHint">
+    <text class="redo-hint-arrow">←</text>
+    <text class="redo-hint-text">左滑章节卡片可重做</text>
+  </view>
+
   <view class="chapter-list">
     <block wx:for="{{chapters}}" wx:key="chapterId">
       <view class="chapter-wrapper">

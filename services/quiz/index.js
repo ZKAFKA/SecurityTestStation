@@ -13,8 +13,6 @@ export async function fetchQuizStructure(quizId) {
     
     const chapters = result.result || []
     
-    console.log('获取题库章节结构成功，共', chapters.length, '章')
-    
     return chapters
     
   } catch (error) {
@@ -38,8 +36,6 @@ export async function fetchQuizQuestions(quizId, chapterId) {
     
     const questions = result.result || []
     
-    console.log('获取题目内容成功，共', questions.length, '题')
-    
     return questions
     
   } catch (error) {
@@ -53,8 +49,6 @@ export async function fetchQuizQuestions(quizId, chapterId) {
 export function cacheQuizData(key, data) {
   try {
     wx.setStorageSync(key, data)
-    
-    console.log('缓存题库数据成功，key:', key)
   } catch (error) {
     console.error('缓存题库数据失败:', error)
   }
@@ -64,8 +58,6 @@ export function cacheQuizData(key, data) {
 export function getCachedQuizData(key) {
   try {
     const data = wx.getStorageSync(key)
-    
-    console.log('获取缓存的题库数据成功，key:', key)
     
     return data
   } catch (error) {
@@ -79,8 +71,6 @@ export function getCachedQuizData(key) {
 export function clearCachedQuizData(key) {
   try {
     wx.removeStorageSync(key)
-    
-    console.log('清除缓存的题库数据成功，key:', key)
   } catch (error) {
     console.error('清除缓存的题库数据失败:', error)
   }

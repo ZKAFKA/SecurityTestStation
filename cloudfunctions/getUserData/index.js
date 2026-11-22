@@ -8,6 +8,26 @@ cloud.init({
 const db = cloud.database()
 const _ = db.command
 
+const MAX_LIMIT = 100
+
+async function fetchAll(collectionName, queryBuilder) {
+  let allData = []
+  let skip = 0
+
+  while (true) {
+    const result = await queryBuilder(
+      db.collection(collectionName).skip(skip).limit(MAX_LIMIT)
+    ).get()
+
+    if (!result.data || result.data.length === 0) break
+
+    allData = allData.concat(result.data)
+    skip += MAX_LIMIT
+  }
+
+  return allData
+}
+
 // 获取用户基本信息
 async function getUserInfo(userId) {
   try {
@@ -22,11 +42,9 @@ async function getUserInfo(userId) {
 // 获取用户收藏记录
 async function getUserFavorites(userId) {
   try {
-    const result = await db.collection('user_favorites')
-      .where({ userId })
-      .orderBy('favoriteTime', 'desc')
-      .get()
-    return result.data
+    return await fetchAll('user_favorites', query =>
+      query.where({ userId }).orderBy('favoriteTime', 'desc')
+    )
   } catch (error) {
     console.error('获取收藏记录失败:', error)
     return []
@@ -36,14 +54,12 @@ async function getUserFavorites(userId) {
 // 获取用户错题记录
 async function getUserWrongQuestions(userId) {
   try {
-    const result = await db.collection('user_wrong_questions')
-      .where({ 
+    return await fetchAll('user_wrong_questions', query =>
+      query.where({ 
         userId,
         isMastered: false
-      })
-      .orderBy('lastWrongTime', 'desc')
-      .get()
-    return result.data
+      }).orderBy('lastWrongTime', 'desc')
+    )
   } catch (error) {
     console.error('获取错题记录失败:', error)
     return []
@@ -53,11 +69,9 @@ async function getUserWrongQuestions(userId) {
 // 获取用户章节进度
 async function getUserChapterProgress(userId) {
   try {
-    const result = await db.collection('user_chapter_progress')
-      .where({ userId })
-      .orderBy('lastStudyTime', 'desc')
-      .get()
-    return result.data
+    return await fetchAll('user_chapter_progress', query =>
+      query.where({ userId }).orderBy('lastStudyTime', 'desc')
+    )
   } catch (error) {
     console.error('获取章节进度失败:', error)
     return []
@@ -115,12 +129,17 @@ exports.main = async (event, context) => {
       }
     }
 
-    // 并行获取所有数据
+    // 按需字段：默认全取（向后兼容）；调用方可显式传 false 跳过不需要的全量分页集合
+    const needFavorites = event.needFavorites !== false
+    const needWrong = event.needWrong !== false
+    const needChapterProgress = event.needChapterProgress !== false
+
+    // 并行获取数据（favorites/wrong/chapterProgress 为全量分页扫描，按需跳过）
     const [user, favorites, wrongQuestions, chapterProgress, currentSession] = await Promise.all([
       getUserInfo(userId),
-      getUserFavorites(userId),
-      getUserWrongQuestions(userId),
-      getUserChapterProgress(userId),
+      needFavorites ? getUserFavorites(userId) : Promise.resolve([]),
+      needWrong ? getUserWrongQuestions(userId) : Promise.resolve([]),
+      needChapterProgress ? getUserChapterProgress(userId) : Promise.resolve([]),
       getUserCurrentSession(userId)
     ])
 

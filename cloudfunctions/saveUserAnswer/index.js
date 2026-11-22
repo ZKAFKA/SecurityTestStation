@@ -23,12 +23,15 @@ const _ = db.command
  * @returns {Object} - 答题记录
  */
 async function saveAnswerWithTransaction(answerData) {
-  const { userId, questionId, bankId, chapterId, userAnswer, correctAnswer, isCorrect, spendTime } = answerData
+  const { userId, questionId, userAnswer, correctAnswer, isCorrect, spendTime, source } = answerData
+  // bankId/chapterId 允许缺省（如错题本页答题可能不带），用空串兜底，避免整次保存失败
+  const bankId = answerData.bankId || ''
+  const chapterId = answerData.chapterId || ''
   const now = Date.now()
 
   // 参数验证
-  if (!userId || !questionId || !bankId || !chapterId) {
-    throw new Error('缺少必要参数：userId、questionId、bankId、chapterId不能为空')
+  if (!userId || !questionId) {
+    throw new Error('缺少必要参数：userId、questionId不能为空')
   }
 
   if (userAnswer === undefined || correctAnswer === undefined || isCorrect === undefined) {
@@ -67,6 +70,7 @@ async function saveAnswerWithTransaction(answerData) {
           isCorrect,
           answerTime: now,
           spendTime,
+          source,
           history: _.push(historyItem)
         }
       })
@@ -85,6 +89,7 @@ async function saveAnswerWithTransaction(answerData) {
         isCorrect,
         answerTime: now,
         spendTime,
+        source,
         history: [{
           userAnswer,
           isCorrect,
@@ -101,7 +106,7 @@ async function saveAnswerWithTransaction(answerData) {
       answerRecord = { _id: result._id, ...recordData }
     }
 
-    // 步骤2：更新用户统计数据
+    // 步骤2：更新用户统计数据（最简口径：每答一题计数 +1）
     const statsUpdateData = isCorrect ? {
       totalQuestions: _.inc(1),
       correctCount: _.inc(1)
@@ -273,13 +278,13 @@ async function updateChapterProgress(userId, bankId, chapterId, questionId, isCo
 /**
  * 云函数主入口
  * @param {Object} event - 事件参数
- * @param {Object} context - 上下文
+ * @param {Object} context
  */
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext()
 
   try {
-    const { userId, questionId, bankId, chapterId, userAnswer, correctAnswer, isCorrect, spendTime } = event
+    const { userId, questionId, bankId, chapterId, userAnswer, correctAnswer, isCorrect, spendTime, source } = event
 
     console.log('===== 保存答题记录开始 =====')
     console.log('参数:', {
@@ -302,13 +307,17 @@ exports.main = async (event, context) => {
       userAnswer,
       correctAnswer,
       isCorrect,
-      spendTime
+      spendTime,
+      source
     })
 
     console.log('核心事务执行成功')
 
     // 可选操作：更新章节进度（事务外，可以容忍失败）
-    await updateChapterProgress(userId, bankId, chapterId, questionId, isCorrect)
+    // 错题本/收藏夹等专项刷题（source='wrong'/'favorite'）不计入章节续练进度，避免污染首页「继续上次练习」
+    if (!source || source === 'normal') {
+      await updateChapterProgress(userId, bankId, chapterId, questionId, isCorrect)
+    }
 
     // 可选操作：更新题库统计（事务外，可以容忍失败）
     await updateBankStats(userId, bankId, isCorrect)

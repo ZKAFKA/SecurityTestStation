@@ -11,7 +11,8 @@ Page({
     showRedoConfirm: false,
     currentChapterId: '',
     currentChapterName: '',
-    currentChapterIndex: -1
+    currentChapterIndex: -1,
+    showRedoHint: false
   },
 
   /**
@@ -30,6 +31,9 @@ Page({
       bankName: name,
       path: path
     });
+
+    // 首次进入章节页面：onShow 时提示左滑可重做
+    this._pendingFirstHint = true;
     
     // 根据题库ID从数据库加载章节数据
     await this.loadChapters();
@@ -41,26 +45,75 @@ Page({
   onShow() {
     // 每次进入页面时更新章节进度
     this.loadChapterProgress();
+
+    // 首次进入：提示左滑章节卡片可重做
+    if (this._pendingFirstHint) {
+      this._pendingFirstHint = false;
+      this.showRedoHint();
+      return;
+    }
+
+    // 刷完一个章节返回：提示左滑可重做
+    var pending = wx.getStorageSync('chapterRedoHintPending');
+    if (pending && pending.bankId === this.data.bankId) {
+      wx.removeStorageSync('chapterRedoHintPending');
+      this.showRedoHint();
+    }
   },
 
   /**
-   * 从本地存储加载章节进度
+   * 加载章节进度（优先从云端读，兜底本地）
    */
-  loadChapterProgress() {
-    const chapters = this.data.chapters;
-    const updatedChapters = chapters.map(chapter => {
-      const progressKey = `chapter_progress_${this.data.bankId}_${chapter.chapterId}`;
-      const completed = wx.getStorageSync(progressKey) || 0;
-      const progress = chapter.questionCount > 0 ? Math.round((completed / chapter.questionCount) * 100) : 0;
-      return {
-        ...chapter,
-        completed,
-        progress
-      };
-    });
-    
-    this.setData({
-      chapters: updatedChapters
+  loadChapterProgress: function() {
+    var that = this;
+    var app = getApp();
+    var userId = (app.globalData && app.globalData.userId) || null;
+
+    var chapters = this.data.chapters;
+    var localProgressMap = {};
+
+    // 先读本地缓存做兜底
+    for (var i = 0; i < chapters.length; i++) {
+      var ck = 'chapter_progress_' + that.data.bankId + '_' + chapters[i].chapterId;
+      localProgressMap[chapters[i].chapterId] = wx.getStorageSync(ck) || 0;
+    }
+
+    var afterMerge = function(cloudProgressMap) {
+      var updatedChapters = chapters.map(function(chapter) {
+        var completed = cloudProgressMap[chapter.chapterId] !== undefined
+          ? cloudProgressMap[chapter.chapterId]
+          : localProgressMap[chapter.chapterId];
+        var progress = chapter.questionCount > 0 ? Math.round((completed / chapter.questionCount) * 100) : 0;
+        return Object.assign({}, chapter, { completed: completed, progress: progress });
+      });
+      that.setData({ chapters: updatedChapters });
+    };
+
+    if (!userId) {
+      // 未登录：只用本地
+      afterMerge({});
+      return;
+    }
+
+    // 调 getUserData 拿 chapterProgress，按 chapterId 映射 completedQuestions
+    wx.cloud.callFunction({
+      name: 'getUserData',
+      data: { userId: userId, includeAnswers: false, needFavorites: false, needWrong: false }
+    }).then(function(result) {
+      var cloudMap = {};
+      if (result.result && result.result.success && result.result.data) {
+        var cp = result.result.data.chapterProgress || [];
+        for (var j = 0; j < cp.length; j++) {
+          // 只取当前题库的
+          if (cp[j].bankId === that.data.bankId) {
+            cloudMap[cp[j].chapterId] = cp[j].completedQuestions || 0;
+          }
+        }
+      }
+      afterMerge(cloudMap);
+    }).catch(function(err) {
+      console.warn('loadChapterProgress getUserData 失败，用本地兜底:', err);
+      afterMerge({});
     });
   },
 
@@ -81,8 +134,6 @@ Page({
         }
       });
       
-      console.log('获取题库信息结果:', questionBankResult.result);
-      
       if (!questionBankResult.result || !questionBankResult.result.success) {
         wx.hideLoading();
         wx.showToast({
@@ -95,8 +146,6 @@ Page({
       const questionBank = questionBankResult.result.data;
       const bankName = questionBank.name; // 例如 "CISSP"
       
-      console.log('题库名称:', bankName);
-      
       // 根据题库名称从chapters集合获取章节
       const chaptersResult = await wx.cloud.callFunction({
         name: 'getChapters',
@@ -104,8 +153,6 @@ Page({
           bankName: bankName
         }
       });
-      
-      console.log('获取章节数据结果:', chaptersResult.result);
       
       if (!chaptersResult.result || !chaptersResult.result.success) {
         wx.hideLoading();
@@ -117,8 +164,6 @@ Page({
       }
       
       const chapters = chaptersResult.result.data;
-      
-      console.log('章节数据:', chapters);
       
       if (!chapters || chapters.length === 0) {
         wx.hideLoading();
@@ -160,9 +205,12 @@ Page({
     const { chapterId, chapterName } = e.currentTarget.dataset;
     const { bankId, bankName, path } = this.data;
     
-    let url = `/pages/quiz/quiz?id=${bankId}&name=${bankName}&chapterId=${chapterId}&chapterName=${chapterName}`;
+    let url = '/pages/quiz/quiz?id=' + bankId
+      + '&name=' + encodeURIComponent(bankName)
+      + '&chapterId=' + chapterId
+      + '&chapterName=' + encodeURIComponent(chapterName);
     if (path) {
-      url += `&path=${encodeURIComponent(path)}`;
+      url += '&path=' + encodeURIComponent(path);
     }
     
     wx.navigateTo({
@@ -185,8 +233,6 @@ Page({
       for (let i = 0; i < this.data.chapters.length; i++) {
         const chapter = this.data.chapters[i];
         
-        console.log(`开始同步章节 ${chapter.id}: ${chapter.name}`);
-        
         // 调用云函数解析Excel文件
         const result = await wx.cloud.callFunction({
           name: 'parseQuiz',
@@ -195,8 +241,6 @@ Page({
             chapterName: chapter.name
           }
         });
-        
-        console.log(`章节 ${chapter.id} 同步完成:`, result.result);
       }
       
       wx.hideLoading();
@@ -252,40 +296,33 @@ Page({
    * 左滑手势移动
    */
   handleTouchMove(e) {
+    // 节流：约 16ms 一次，避免高频 touchmove 全量 setData
+    const now = Date.now();
+    if (this._lastMoveTs && now - this._lastMoveTs < 16) return;
+    this._lastMoveTs = now;
+
     const index = e.currentTarget.dataset.index;
     const touch = e.touches[0];
-    const chapters = this.data.chapters;
     const startX = this.data.startX || 0;
-    
+
     // 计算滑动距离
-    const moveX = touch.clientX - startX;
-    
+    let translateX = touch.clientX - startX;
+
     // 限制滑动范围
     const maxMove = -80;
     const minMove = 0;
-    let translateX = moveX;
-    
+
     if (translateX < maxMove) {
       translateX = maxMove;
     } else if (translateX > minMove) {
       translateX = minMove;
     }
-    
-    // 更新当前章节的滑动状态
-    const updatedChapters = chapters.map((chapter, idx) => {
-      if (idx === index) {
-        return {
-          ...chapter,
-          translateX: translateX,
-          showRedo: translateX <= -40
-        };
-      }
-      return chapter;
-    });
-    
-    this.setData({
-      chapters: updatedChapters
-    });
+
+    // 仅更新当前滑动项，避免重建整个 chapters 数组
+    const setDataObj = {};
+    setDataObj['chapters[' + index + '].translateX'] = translateX;
+    setDataObj['chapters[' + index + '].showRedo'] = translateX <= -40;
+    this.setData(setDataObj);
   },
 
   /**
@@ -361,10 +398,32 @@ Page({
   },
 
   /**
+   * 显示左滑重做提示（3秒后自动消失）
+   */
+  showRedoHint: function() {
+    var that = this;
+    this.setData({ showRedoHint: true });
+    if (this._redoHintTimer) clearTimeout(this._redoHintTimer);
+    this._redoHintTimer = setTimeout(function() {
+      that.setData({ showRedoHint: false });
+    }, 3000);
+  },
+
+  /**
+   * 手动关闭左滑重做提示
+   */
+  hideRedoHint: function() {
+    if (this._redoHintTimer) clearTimeout(this._redoHintTimer);
+    this.setData({ showRedoHint: false });
+  },
+
+  /**
    * 确认清空章节做题记录
    */
   async confirmRedo() {
     const { currentChapterId, currentChapterName, currentChapterIndex, bankId } = this.data;
+    const app = getApp();
+    const userId = app.globalData.userId;
     
     if (!currentChapterId) {
       return;
@@ -376,13 +435,33 @@ Page({
     });
     
     try {
-      // 清空本地存储中的章节做题记录
+      // 清空本地存储中的章节进度
       const progressKey = `chapter_progress_${bankId}_${currentChapterId}`;
       wx.removeStorageSync(progressKey);
+      
+      // 清空本地存储中的答题进度
+      const quizProgressKey = `quiz_progress_${bankId}_${currentChapterId}`;
+      wx.removeStorageSync(quizProgressKey);
       
       // 清空本地存储中的题目答案记录
       const answerKey = `quiz_answers_${bankId}_${currentChapterId}`;
       wx.removeStorageSync(answerKey);
+      
+      // 调用云函数删除云端记录
+      if (userId) {
+        const result = await wx.cloud.callFunction({
+          name: 'resetChapterProgress',
+          data: {
+            userId: userId,
+            bankId: bankId,
+            chapterId: currentChapterId
+          }
+        });
+        
+        if (!result.result.success) {
+          console.error('云端重置失败:', result.result);
+        }
+      }
       
       // 更新章节的完成状态
       const chapters = this.data.chapters;
@@ -405,14 +484,12 @@ Page({
       
       wx.hideLoading();
       
-      // 显示成功提示
       wx.showToast({
         title: `${currentChapterName}做题记录已清空`,
         icon: 'success',
         duration: 2000
       });
       
-      // 关闭弹窗
       this.closeRedoConfirm();
       
     } catch (error) {

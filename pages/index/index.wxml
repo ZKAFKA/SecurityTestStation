@@ -1,33 +1,162 @@
-<!-- banner -->
-<swiper wx:if="{{bannerList.length >0}}" class="poster" indicator-dots autoplay>
-  <swiper-item wx:for="{{bannerList}}" wx:key="index">
-    <image src="{{item}}"></image>
-  </swiper-item>
-</swiper>
-
-<!-- 题库选择 -->
-<view wx:if="{{applicationScene.length >0}}" class="common" style="padding-right: 40rpx;">
-  <view class="common_title">题库选择</view>
-  <scroll-view class="scene_list" scroll-x="true" enable-flex>
-    <view wx:for="{{applicationScene}}" wx:key="index" class="scene_item" bind:tap="goQuiz" data-id="{{item._id}}" data-title="{{item.title}}" data-path="{{item.path}}">
-      <view class="scene_title">{{item.title}}</view> 
-      <view class="scene_cont">{{item.sub_title}}</view> 
+<!-- Hero Banner -->
+<view class="hero-banner">
+  <view class="hero-bg-glow"></view>
+  <view class="hero-content">
+    <view class="hero-badge">
+      <view class="hero-badge-dot"></view>
+      <text class="hero-badge-text">永久免费的网络安全备考平台</text>
     </view>
-  </scroll-view>
-</view>
-
-<!-- 文章荐读 -->
-<view wx:if="{{newsList.length >0}}" class="common">
-  <view class="common_title">
-    <text>文章荐读</text>
-    <view class="news_more" bind:tap="onGoNews">
-      <text>更多 ></text>
+    <view class="hero-title-row">
+      <view class="hero-title-wrap">
+        <text class="hero-title">网络安全刷题站</text>
+        <text class="hero-subtitle">每日一练 巩固考点 突破技能壁垒</text>
+      </view>
+      <view class="hero-shield">
+        <image class="hero-shield-img" src="cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/assets/home_icon.png" mode="aspectFit"></image>
+      </view>
     </view>
-  </view>
-  <view class="news_list">
-    <news-list wx:for="{{newsList}}" wx:key="index" title="{{item.title}}" description="{{item.description}}" time="{{item.time}}" url="{{item.url}}" id="{{item._id}}" number="{{index}}"></news-list>
   </view>
 </view>
 
-<!-- 版本信息 -->
-<version-info wx:if="{{partnersList.length >0}}"></version-info>
+<!-- 内容区域 -->
+<view class="content-wrap">
+
+  <!-- 继续上次练习 -->
+  
+  <!-- 未登录：登录引导 -->
+  <view wx:if="{{!isLoggedIn}}" class="resume-card login-card">
+    <view class="resume-header">
+      <view class="resume-tag">
+        <text class="resume-tag-text">开始练习</text>
+      </view>
+      <view class="resume-time">
+        <text class="resume-time-text">登录后自动同步进度</text>
+      </view>
+    </view>
+    <view class="login-card-body">
+      <text class="login-card-title">登录开启今日刷题</text>
+      <text class="login-card-desc">记录学习进度，断点续练，高效备考</text>
+    </view>
+    <view class="resume-btn" bindtap="goLogin">
+      <text class="resume-btn-text">立即登录</text>
+    </view>
+  </view>
+
+  <!-- 加载中：正在判定练习进度，暂不展示内容 -->
+  <view wx:elif="{{resumeLoading}}" class="resume-card loading-card">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">正在加载练习进度…</text>
+  </view>
+
+  <!-- 已登录且有记录：继续上次练习 -->
+  <view wx:elif="{{lastStudySession}}" class="resume-card" bindtap="goContinueQuiz">
+    <view class="resume-header">
+      <view class="resume-tag">
+        <text class="resume-tag-text">继续上次练习</text>
+      </view>
+      <view class="resume-time">
+        <text class="resume-time-text">{{lastStudySession.relativeTime}}</text>
+      </view>
+    </view>
+    
+    <view class="resume-body">
+      <text class="resume-bank-title">{{lastStudySession.bankName}}</text>
+      <text class="resume-chapter-info">{{lastStudySession.chapterInfoDisplay}}</text>
+    </view>
+
+    <view class="resume-progress-wrap">
+      <view class="resume-progress-row">
+        <text class="resume-progress-label">章节进度</text>
+        <text class="resume-progress-pct">{{lastStudySession.progressPercentDisplay}}</text>
+      </view>
+      <view class="resume-progress-bar-bg">
+        <view class="resume-progress-bar-fill" style="width: {{lastStudySession.progressPercent}}%"></view>
+      </view>
+    </view>
+
+    <view class="resume-btn">
+      <text class="resume-btn-text">继续刷题 第 {{lastStudySession.currentQuestionDisplay}} 题</text>
+    </view>
+  </view>
+
+  <!-- 已登录但从未练习：引导去题库开启第一次 -->
+  <view wx:else class="resume-card first-card">
+    <view class="resume-header">
+      <view class="resume-tag">
+        <text class="resume-tag-text">欢迎加入</text>
+      </view>
+      <view class="resume-time">
+        <text class="resume-time-text">选择一个题库开始</text>
+      </view>
+    </view>
+    <view class="login-card-body">
+      <text class="login-card-title">还没有练习记录</text>
+      <text class="login-card-desc">选择下方精选题库，进入章节开始第一次练习，下次回来即可自动续练。</text>
+    </view>
+    <view class="resume-btn" bindtap="scrollToBankSection">
+      <text class="resume-btn-text">浏览精选题库</text>
+    </view>
+  </view>
+
+  <!-- 题库分类 -->
+  <view id="bank-section" class="bank-section">
+    <view class="bank-section-title">题库分类</view>
+    
+    <view class="bank-grid">
+      <view 
+        wx:for="{{applicationScene}}" 
+        wx:key="_id" 
+        class="bank-card"
+        bindtap="goQuiz"
+        data-id="{{item._id}}" 
+        data-title="{{item.title}}" 
+        data-path="{{item.path}}"
+      >
+        <view class="bank-card-top">
+          <text class="bank-card-title">{{item.title}}</text>
+          <text class="bank-card-sub">{{item.sub_title}}</text>
+        </view>
+        <view class="bank-card-bottom">
+          <view class="bank-card-count-wrap">
+            <text class="bank-card-count">{{item.questionCountText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 公众号引流 Banner -->
+  <view class="official-banner" bindtap="onOfficialTap">
+    <view class="official-row">
+      <view class="official-icon">
+        <image class="official-icon-img" src="cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/公众号二维码/icon.png" mode="aspectFill"></image>
+      </view>
+      <view class="official-content">
+        <text class="official-title">网络安全研究站</text>
+        <text class="official-desc">深度、专业、前沿的网络安全公众号</text>
+      </view>
+      <view class="official-btn" catchtap="onOfficialTap">
+        <text class="official-btn-text">立即关注</text>
+      </view>
+    </view>
+  </view>
+
+</view>
+
+<!-- 公众号二维码悬浮弹窗 -->
+<view wx:if="{{showQrcodeModal}}" class="qrcode-mask" bindtap="closeQrcodeModal">
+  <view class="qrcode-modal" catchtap="noop">
+    <view class="qrcode-img-wrap">
+      <image
+        class="qrcode-img"
+        src="cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/公众号二维码/qrcode.jpg"
+        mode="aspectFit"
+        show-menu-by-longpress="{{true}}"
+      ></image>
+    </view>
+    <text class="qrcode-tip">长按图片识别二维码，关注公众号</text>
+    <view class="qrcode-close-btn" catchtap="closeQrcodeModal">
+      <text class="qrcode-close-text">关 闭</text>
+    </view>
+  </view>
+</view>

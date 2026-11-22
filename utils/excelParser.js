@@ -4,8 +4,6 @@
 // 从云存储下载Excel文件并通过云函数解析
 async function parseExcelFromStorage(filePath) {
   try {
-    console.log('开始解析Excel文件:', filePath);
-    
     // 调用云函数解析Excel（使用纯解析模式）
     const result = await wx.cloud.callFunction({
       name: 'parseExcelQuestions',
@@ -14,8 +12,6 @@ async function parseExcelFromStorage(filePath) {
         parseOnly: true // 纯解析模式，不导入数据库
       }
     });
-    
-    console.log('云函数调用结果:', result.result);
     
     if (!result.result || !result.result.success) {
       return {
@@ -59,7 +55,6 @@ function parseQuestions(jsonData) {
   
   // 如果是已经格式化的数据（来自云函数）
   if (firstRow.questionContent && firstRow.options && firstRow.answer) {
-    console.log('数据已格式化，直接返回');
     return {
       success: true,
       data: jsonData,

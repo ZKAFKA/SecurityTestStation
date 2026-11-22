@@ -33,8 +33,14 @@ exports.main = async (event, context) => {
       
       // 如果有新的用户信息，更新
       if (userInfo) {
+        const defaultAvatar = 'cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/assets/default_avatar.png'
+        let avatarUrl = userInfo.avatarUrl
+        // 兜底：空值 / 旧本地路径 → 云存储默认头像
+        if (!avatarUrl || (typeof avatarUrl === 'string' && (avatarUrl.indexOf('/images/') === 0 || (avatarUrl.indexOf('http') !== 0 && avatarUrl.indexOf('cloud://') !== 0)))) {
+          avatarUrl = defaultAvatar
+        }
         updateData.nickName = userInfo.nickName
-        updateData.avatarUrl = userInfo.avatarUrl
+        updateData.avatarUrl = avatarUrl
         updateData.gender = userInfo.gender || 0
         updateData.country = userInfo.country || ''
         updateData.province = userInfo.province || ''
@@ -72,10 +78,16 @@ exports.main = async (event, context) => {
         }
       }
       
+      const defaultAvatar = 'cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/assets/default_avatar.png'
+      let avatarUrl = userInfo.avatarUrl
+      if (!avatarUrl || (typeof avatarUrl === 'string' && (avatarUrl.indexOf('/images/') === 0 || (avatarUrl.indexOf('http') !== 0 && avatarUrl.indexOf('cloud://') !== 0)))) {
+        avatarUrl = defaultAvatar
+      }
+
       const newUser = {
         openid: wxContext.OPENID,
         nickName: userInfo.nickName,
-        avatarUrl: userInfo.avatarUrl,
+        avatarUrl: avatarUrl,
         gender: userInfo.gender || 0,
         country: userInfo.country || '',
         province: userInfo.province || '',

@@ -8,62 +8,29 @@ cloud.init({
 const db = cloud.database()
 const _ = db.command
 
-// 初始化用户数据库集合
+// 创建单个集合（已存在则忽略）
+function createCollection(name) {
+  return db.createCollection(name).catch(function (err) {
+    if (err.errMsg && err.errMsg.includes('exist')) {
+      console.log(name + ' 集合已存在')
+    } else {
+      throw err
+    }
+  })
+}
+
+// 初始化用户数据库集合（并行创建，已存在的集合静默跳过）
 async function initCollections() {
   try {
-    // 1. 创建 users 集合（如果不存在）
-    await db.createCollection('users').catch(err => {
-      if (err.errMsg.includes('exist')) {
-        console.log('users 集合已存在')
-      } else {
-        throw err
-      }
-    })
-
-    // 2. 创建 user_answers 集合
-    await db.createCollection('user_answers').catch(err => {
-      if (err.errMsg.includes('exist')) {
-        console.log('user_answers 集合已存在')
-      } else {
-        throw err
-      }
-    })
-
-    // 3. 创建 user_favorites 集合
-    await db.createCollection('user_favorites').catch(err => {
-      if (err.errMsg.includes('exist')) {
-        console.log('user_favorites 集合已存在')
-      } else {
-        throw err
-      }
-    })
-
-    // 4. 创建 user_wrong_questions 集合
-    await db.createCollection('user_wrong_questions').catch(err => {
-      if (err.errMsg.includes('exist')) {
-        console.log('user_wrong_questions 集合已存在')
-      } else {
-        throw err
-      }
-    })
-
-    // 5. 创建 user_chapter_progress 集合
-    await db.createCollection('user_chapter_progress').catch(err => {
-      if (err.errMsg.includes('exist')) {
-        console.log('user_chapter_progress 集合已存在')
-      } else {
-        throw err
-      }
-    })
-
-    // 6. 创建 user_quiz_sessions 集合
-    await db.createCollection('user_quiz_sessions').catch(err => {
-      if (err.errMsg.includes('exist')) {
-        console.log('user_quiz_sessions 集合已存在')
-      } else {
-        throw err
-      }
-    })
+    await Promise.all([
+      createCollection('users'),
+      createCollection('user_answers'),
+      createCollection('user_favorites'),
+      createCollection('user_wrong_questions'),
+      createCollection('user_chapter_progress'),
+      createCollection('user_quiz_sessions'),
+      createCollection('user_checkins')
+    ])
 
     console.log('所有集合初始化成功')
     return true
@@ -98,7 +65,7 @@ async function createOrUpdateUser(openid, userInfo) {
       const userData = {
         openid,
         nickName: userInfo.nickName || '用户' + openid.substring(0, 8),
-        avatarUrl: userInfo.avatarUrl || '',
+        avatarUrl: userInfo.avatarUrl || 'cloud://cloud1-2gdek8xx22a5db1a.636c-cloud1-2gdek8xx22a5db1a-1395189804/assets/default_avatar.png',
         createTime: now,
         lastLoginTime: now,
         totalQuestions: 0,
@@ -106,7 +73,12 @@ async function createOrUpdateUser(openid, userInfo) {
         wrongCount: 0,
         accuracy: 0,
         studyTime: 0,
-        bankStats: {}
+        bankStats: {},
+        // 每日打卡提醒默认关闭；打卡天数默认0
+        checkinReminder: false,
+        totalCheckinDays: 0,
+        continuousCheckinDays: 0,
+        checkinDays: 0
       }
 
       const result = await db.collection('users').add({

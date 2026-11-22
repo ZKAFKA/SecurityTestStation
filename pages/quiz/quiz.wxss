@@ -136,7 +136,7 @@ page {
   width: 100%;
   height: 100%;
   background-color: #fff;
-  padding: 30rpx;
+  padding: 30rpx 30rpx 150rpx;
   border-radius: 16rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
   overflow-y: auto;
@@ -163,6 +163,24 @@ page {
 .type-multiple {
   background-color: #e3f2fd;
   color: #1976d2;
+  padding: 8rpx 20rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+  font-weight: bold;
+}
+
+.type-judge {
+  background-color: #fff3e0;
+  color: #ef6c00;
+  padding: 8rpx 20rpx;
+  border-radius: 16rpx;
+  font-size: 22rpx;
+  font-weight: bold;
+}
+
+.type-unknown {
+  background-color: #eceff1;
+  color: #607d8b;
   padding: 8rpx 20rpx;
   border-radius: 16rpx;
   font-size: 22rpx;
@@ -427,6 +445,20 @@ page {
   font-size: 28rpx;
   color: #666;
   line-height: 1.6;
+}
+
+/* 原生模板广告容器 */
+.ad-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 30rpx;
+  padding-bottom: 20rpx;
+}
+
+.ad-container ad-custom {
+  width: 100%;
 }
 
 /* 提交试卷按钮容器 */
